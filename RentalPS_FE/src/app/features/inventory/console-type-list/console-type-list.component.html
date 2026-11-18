@@ -1,0 +1,21 @@
+<h2>Master Tipe PlayStation</h2>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>Tipe PS</th>
+      <th>Tarif Weekday</th>
+      <th>Tarif Weekend</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <tr *ngFor="let item of consoleTypes">
+      <td>{{ item.name }}</td>
+      <td>{{ item.weekdayHourlyRate | currency:'IDR':'symbol':'1.0-0':'id-ID' }}</td>
+      <td>{{ item.weekendHourlyRate | currency:'IDR':'symbol':'1.0-0':'id-ID' }}</td>
+      <td>{{ item.isActive ? 'Aktif' : 'Tidak aktif' }}</td>
+    </tr>
+  </tbody>
+</table>
