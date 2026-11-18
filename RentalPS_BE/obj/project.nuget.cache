@@ -1,11 +1,12 @@
 {
   "version": 2,
-  "dgSpecHash": "OHtvy32mwng=",
+  "dgSpecHash": "MPPqSqId1Mk=",
   "success": true,
   "projectFilePath": "C:\\steve\\RentalPS\\RentalPS_BE\\RentalPS_BE.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Adicipta\\.nuget\\packages\\microsoft.aspnetcore.openapi\\9.0.22\\microsoft.aspnetcore.openapi.9.0.22.nupkg.sha512",
-    "C:\\Users\\Adicipta\\.nuget\\packages\\microsoft.openapi\\1.6.31\\microsoft.openapi.1.6.31.nupkg.sha512"
+    "C:\\Users\\Adicipta\\.nuget\\packages\\microsoft.openapi\\1.6.31\\microsoft.openapi.1.6.31.nupkg.sha512",
+    "C:\\Users\\Adicipta\\.nuget\\packages\\swashbuckle.aspnetcore\\11.0.1\\swashbuckle.aspnetcore.11.0.1.nupkg.sha512"
   ],
   "logs": []
 }

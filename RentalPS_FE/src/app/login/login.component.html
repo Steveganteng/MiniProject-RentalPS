@@ -1,0 +1,40 @@
+<section class="container d-flex justify-content-center align-items-center min-vh-100">
+	<div class="card shadow-sm p-4" style="width: 100%; max-width: 420px;">
+		<h1 class="h3 mb-4 text-center fw-bold">Log in</h1>
+
+		<form (ngSubmit)="onSubmitHandler()">
+			<div class="mb-3">
+				<label for="email" class="form-label">Email</label>
+				<input
+					type="email"
+					class="form-control"
+					id="email"
+					name="email"
+					placeholder="name@example.com"
+					autocomplete="email"
+					required
+				/>
+			</div>
+
+			<div class="mb-4">
+				<label for="password" class="form-label">Password</label>
+				<input
+					type="password"
+					class="form-control"
+					id="password"
+					name="password"
+					autocomplete="current-password"
+					required
+				/>
+			</div>
+
+			<button type="submit" class="btn btn-primary w-100">Log in</button>
+
+			<p class="mt-3 mb-0 text-center">
+				<a routerLink="/register" class="text-decoration-none">
+					<span class="text-dark">Belum punya akun?</span> daftar disini
+				</a>
+			</p>
+		</form>
+	</div>
+</section>
