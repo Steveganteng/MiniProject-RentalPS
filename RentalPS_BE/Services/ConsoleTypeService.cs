@@ -1,0 +1,96 @@
+﻿using RentalPS_BE.DTOs;
+using RentalPS_BE.Repositories;
+using RentalPSMiniProject.Models;
+
+namespace RentalPS_BE.Services
+{
+    public class ConsoleTypeService : IConsoleTypeService
+    {
+        private readonly IRepository<ConsoleType> _repository;
+
+        public ConsoleTypeService(IRepository<ConsoleType> repository)
+        {
+            _repository = repository;
+        }
+
+        public async Task<List<ConsoleTypeResponse>> GetAllAsync()
+        {
+            var consoleTypes = await _repository.GetAllAsync();
+
+            return consoleTypes
+                .Select(ToResponse)
+                .ToList();
+        }
+
+        public async Task<ConsoleTypeResponse?> GetByIdAsync(int id)
+        {
+            var consoleType = await _repository.GetByIdAsync(id);
+
+            return consoleType == null
+                ? null
+                : ToResponse(consoleType);
+        }
+
+        public async Task<ConsoleTypeResponse> CreateAsync(ConsoleTypeRequest request)
+        {
+            var consoleType = new ConsoleType
+            {
+                Name = request.Name.Trim(),
+                HourlyRate = request.HourlyRate,
+                IsActive = request.IsActive
+            };
+
+            await _repository.AddAsync(consoleType);
+            await _repository.SaveChangesAsync();
+
+            return ToResponse(consoleType);
+        }
+
+        public async Task<ConsoleTypeResponse?> UpdateAsync(
+            int id,
+            ConsoleTypeRequest request)
+        {
+            var consoleType = await _repository.GetByIdAsync(id);
+
+            if (consoleType == null)
+            {
+                return null;
+            }
+
+            consoleType.Name = request.Name.Trim();
+            consoleType.HourlyRate = request.HourlyRate;
+            consoleType.IsActive = request.IsActive;
+
+            _repository.Update(consoleType);
+            await _repository.SaveChangesAsync();
+
+            return ToResponse(consoleType);
+        }
+
+        public async Task<bool> DeactivateAsync(int id)
+        {
+            var consoleType = await _repository.GetByIdAsync(id);
+
+            if (consoleType == null)
+            {
+                return false;
+            }
+
+            consoleType.IsActive = false;
+            await _repository.SaveChangesAsync();
+
+            return true;
+        }
+
+        private static ConsoleTypeResponse ToResponse(ConsoleType consoleType)
+        {
+            return new ConsoleTypeResponse
+            {
+                Id = consoleType.Id,
+                Name = consoleType.Name,
+                HourlyRate = consoleType.HourlyRate,
+                IsActive = consoleType.IsActive
+            };
+        }
+    }
+}
