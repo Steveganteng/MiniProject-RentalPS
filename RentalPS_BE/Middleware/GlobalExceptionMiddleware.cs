@@ -29,7 +29,7 @@ namespace RentalPS_BE.Middlewares
                 await ctx.Response.WriteAsJsonAsync(new
                 {
                     status = "error",
-                    message = ex.Message,
+                    message = "Terjadi kesalahan pada server.",
                     timestamp = DateTime.UtcNow
                 });
             }

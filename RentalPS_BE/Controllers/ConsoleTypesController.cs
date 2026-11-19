@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using RentalPS_BE.DTOs;
 using RentalPS_BE.Services;
 
@@ -35,9 +36,20 @@ namespace RentalPS_BE.Controllers
             return Ok(consoleType);
         }
 
+        [Authorize(Roles = "Admin")]
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> Create(ConsoleTypeRequest request)
         {
+            if (await _consoleTypeService.NameExistsAsync(request.Name))
+            {
+                return Conflict(new
+                {
+                    message = "Nama console type sudah digunakan."
+                });
+            }
+
             var created = await _consoleTypeService.CreateAsync(request);
 
             return CreatedAtAction(
@@ -46,12 +58,30 @@ namespace RentalPS_BE.Controllers
                 created);
         }
 
+        [Authorize(Roles = "Admin")]
+        [HttpPut("{id:int:min(1)}")]
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id:int:min(1)}")]
         public async Task<IActionResult> Update(int id, ConsoleTypeRequest request)
         {
+            var existing = await _consoleTypeService.GetByIdAsync(id);
+
+            if (existing is null)
+            {
+                return NotFound();
+            }
+
+            if (await _consoleTypeService.NameExistsAsync(request.Name, id))
+            {
+                return Conflict(new
+                {
+                    message = "Nama console type sudah digunakan."
+                });
+            }
+
             var updated = await _consoleTypeService.UpdateAsync(id, request);
 
-            if (updated == null)
+            if (updated is null)
             {
                 return NotFound();
             }
@@ -59,6 +89,7 @@ namespace RentalPS_BE.Controllers
             return Ok(updated);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id:int:min(1)}")]
         public async Task<IActionResult> Delete(int id)
         {

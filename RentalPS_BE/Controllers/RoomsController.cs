@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using RentalPS_BE.DTOs;
 using RentalPS_BE.Services;
 
@@ -35,6 +36,7 @@ namespace RentalPS_BE.Controllers
             return Ok(room);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> Create(RoomRequest request)
         {
@@ -47,12 +49,17 @@ namespace RentalPS_BE.Controllers
                     new { id = created.Id },
                     created);
             }
+            catch (DuplicateRoomNumberException ex)
+            {
+                return Conflict(new { message = ex.Message });
+            }
             catch (ArgumentException ex)
             {
                 return BadRequest(new { message = ex.Message });
             }
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id:int:min(1)}")]
         public async Task<IActionResult> Update(int id, RoomRequest request)
         {
@@ -67,12 +74,17 @@ namespace RentalPS_BE.Controllers
 
                 return Ok(updated);
             }
+            catch (DuplicateRoomNumberException ex)
+            {
+                return Conflict(new { message = ex.Message });
+            }
             catch (ArgumentException ex)
             {
                 return BadRequest(new { message = ex.Message });
             }
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id:int:min(1)}")]
         public async Task<IActionResult> Delete(int id)
         {
