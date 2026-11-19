@@ -1,0 +1,37 @@
+.dashboard {
+  padding: 24px;
+  font-family: Arial, sans-serif;
+}
+
+.cards {
+  display: flex;
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.card,
+.recent {
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: white;
+}
+
+.card {
+  flex: 1;
+}
+
+.card h2 {
+  font-size: 16px;
+}
+
+.card p {
+  font-size: 28px;
+  font-weight: bold;
+}
+
+@media (max-width: 700px) {
+  .cards {
+    flex-direction: column;
+  }
+}
