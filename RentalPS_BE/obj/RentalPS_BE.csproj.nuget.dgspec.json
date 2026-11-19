@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\steve\\RentalPS\\RentalPS_BE\\RentalPS_BE.csproj": {}
+    "C:\\Users\\Adicipta\\Documents\\MiniProject-RentalPS\\RentalPS_BE\\RentalPS_BE.csproj": {}
   },
   "projects": {
-    "C:\\steve\\RentalPS\\RentalPS_BE\\RentalPS_BE.csproj": {
+    "C:\\Users\\Adicipta\\Documents\\MiniProject-RentalPS\\RentalPS_BE\\RentalPS_BE.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\steve\\RentalPS\\RentalPS_BE\\RentalPS_BE.csproj",
+        "projectUniqueName": "C:\\Users\\Adicipta\\Documents\\MiniProject-RentalPS\\RentalPS_BE\\RentalPS_BE.csproj",
         "projectName": "RentalPS_BE",
-        "projectPath": "C:\\steve\\RentalPS\\RentalPS_BE\\RentalPS_BE.csproj",
+        "projectPath": "C:\\Users\\Adicipta\\Documents\\MiniProject-RentalPS\\RentalPS_BE\\RentalPS_BE.csproj",
         "packagesPath": "C:\\Users\\Adicipta\\.nuget\\packages\\",
-        "outputPath": "C:\\steve\\RentalPS\\RentalPS_BE\\obj\\",
+        "outputPath": "C:\\Users\\Adicipta\\Documents\\MiniProject-RentalPS\\RentalPS_BE\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -26,8 +26,7 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "http://r3app-server:5400/v3/index.json": {},
-          "http://r3app-server:5500/v3/index.json": {},
+          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -56,9 +55,19 @@
               "target": "Package",
               "version": "[9.0.22, )"
             },
-            "Swashbuckle.AspNetCore": {
+            "Microsoft.EntityFrameworkCore": {
               "target": "Package",
-              "version": "[11.0.1, )"
+              "version": "[8.0.34, )"
+            },
+            "Microsoft.EntityFrameworkCore.Tools": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[8.0.34, )"
+            },
+            "Npgsql.EntityFrameworkCore.PostgreSQL": {
+              "target": "Package",
+              "version": "[8.0.11, )"
             }
           },
           "imports": [
