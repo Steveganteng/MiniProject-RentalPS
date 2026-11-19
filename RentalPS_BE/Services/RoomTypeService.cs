@@ -31,6 +31,19 @@ namespace RentalPS_BE.Services
                 : ToResponse(roomType);
         }
 
+        public async Task<bool> NameExistsAsync(string name, int? excludeId = null)
+        {
+            var normalizedName = name.Trim();
+            var roomTypes = await _repository.GetAllAsync();
+
+            return roomTypes.Any(roomType =>
+                (!excludeId.HasValue || roomType.Id != excludeId.Value) &&
+                string.Equals(
+                    roomType.Name.Trim(),
+                    normalizedName,
+                    StringComparison.OrdinalIgnoreCase));
+        }
+
         public async Task<RoomTypeResponse> CreateAsync(RoomTypeRequest request)
         {
             var roomType = new RoomType

@@ -4,6 +4,12 @@ using RentalPSMiniProject.Models;
 
 namespace RentalPS_BE.Services
 {
+    public class DuplicateRoomNumberException : Exception
+    {
+        public DuplicateRoomNumberException(string message) : base(message)
+        {
+        }
+    }
     public class RoomService : IRoomService
     {
         private readonly IRepository<Room> _roomRepository;
@@ -115,8 +121,8 @@ namespace RentalPS_BE.Services
 
             if (duplicateExists)
             {
-                throw new ArgumentException(
-                    "Nomor Ruangan ini sudah digunakan");
+                throw new DuplicateRoomNumberException(
+                    "Nomor ruangan ini sudah digunakan.");
             }
         }
 

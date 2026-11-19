@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using RentalPS_BE.DTOs;
 using RentalPS_BE.Services;
 
@@ -35,9 +36,18 @@ namespace RentalPS_BE.Controllers
             return Ok(roomType);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> Create(RoomTypeRequest request)
         {
+            if (await _roomTypeService.NameExistsAsync(request.Name))
+            {
+                return Conflict(new
+                {
+                    message = "Nama room type sudah digunakan."
+                });
+            }
+
             var created = await _roomTypeService.CreateAsync(request);
 
             return CreatedAtAction(
@@ -46,9 +56,25 @@ namespace RentalPS_BE.Controllers
                 created);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id:int:min(1)}")]
         public async Task<IActionResult> Update(int id, RoomTypeRequest request)
         {
+            var existing = await _roomTypeService.GetByIdAsync(id);
+
+            if (existing is null)
+            {
+                return NotFound();
+            }
+
+            if (await _roomTypeService.NameExistsAsync(request.Name, id))
+            {
+                return Conflict(new
+                {
+                    message = "Nama room type sudah digunakan."
+                });
+            }
+
             var updated = await _roomTypeService.UpdateAsync(id, request);
 
             if (updated == null)
@@ -59,6 +85,7 @@ namespace RentalPS_BE.Controllers
             return Ok(updated);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id:int:min(1)}")]
         public async Task<IActionResult> Delete(int id)
         {

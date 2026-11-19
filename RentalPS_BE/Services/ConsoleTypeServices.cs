@@ -31,6 +31,19 @@ namespace RentalPS_BE.Services
                 : ToResponse(consoleType);
         }
 
+        public async Task<bool> NameExistsAsync(string name, int? excludeId = null)
+        {
+            var normalizedName = name.Trim();
+            var consoleTypes = await _repository.GetAllAsync();
+
+            return consoleTypes.Any(consoleType =>
+                (!excludeId.HasValue || consoleType.Id != excludeId.Value) &&
+                string.Equals(
+                    consoleType.Name.Trim(),
+                    normalizedName,
+                    StringComparison.OrdinalIgnoreCase));
+        }
+
         public async Task<ConsoleTypeResponse> CreateAsync(ConsoleTypeRequest request)
         {
             var consoleType = new ConsoleType
