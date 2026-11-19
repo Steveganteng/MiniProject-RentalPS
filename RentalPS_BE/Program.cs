@@ -5,6 +5,7 @@ using Microsoft.OpenApi.Models;
 using System.Text;
 using RentalPS_BE.Repositories;
 using RentalPS_BE.Services;
+using RentalPS_BE.Middlewares;
 using RentalPSMiniProject.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -80,6 +81,12 @@ builder.Services.AddCors(options =>
               .AllowCredentials();
     });
 });
+
+builder.Services.AddHttpsRedirection(options =>
+{
+    options.HttpsPort = 7054;
+});
+
 builder.Services.AddScoped<IStickTypeService, StickTypeService>();
 builder.Services.AddScoped<IStickService, StickService>();
 
@@ -100,11 +107,6 @@ builder.Services.AddScoped<IRentalService, RentalService>();
 builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
 builder.Services.AddScoped<IRoomService, RoomService>();
 
-
-
-
-
-
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -114,6 +116,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseMiddleware<GlobalExceptionMiddleware>();
+
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
