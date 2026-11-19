@@ -31,6 +31,15 @@ builder.Services.AddScoped<IRentalService, RentalService>();
 
 
 
+
+builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
+builder.Services.AddScoped<IRoomService, RoomService>();
+
+
+
+
+
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

@@ -81,7 +81,10 @@ namespace RentalPSMiniProject.Data
                 entity.Property(r => r.RoomTypeId).HasColumnName("room_type_id");
                 entity.Property(r => r.RoomNumber).HasColumnName("room_number");
                 entity.Property(r => r.Description).HasColumnName("description");
-                entity.Property(r => r.StatusRoom).HasColumnName("status_room");
+                entity.Property(r => r.StatusRoom).HasColumnName("status_room")
+                .HasConversion(status => status.ToString().ToLowerInvariant(),
+                status => Enum.Parse<StatusRoom>(status, true))
+                .HasColumnType("text");
             });
 
             modelBuilder.Entity<ConsoleUnit>(entity =>
