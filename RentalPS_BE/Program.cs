@@ -100,7 +100,7 @@ builder.Services.AddScoped<IRentalService, RentalService>();
 builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
 builder.Services.AddScoped<IRoomService, RoomService>();
 
-
+builder.Services.AddScoped<IPaymentService, PaymentService>();
 
 
 
