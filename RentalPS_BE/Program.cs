@@ -15,6 +15,21 @@ var connStr = builder.Configuration.GetConnectionString("RentalPS");
 builder.Services.AddDbContext<RentalPSDBContext>(opt => opt.UseNpgsql(connStr));
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IConsoleTypeService, ConsoleTypeService>();
+builder.Services.AddScoped<IStickTypeService, StickTypeService>();
+builder.Services.AddScoped<IStickService, StickService>();
+
+
+
+builder.Services.AddScoped<IRentalRoomService, RentalRoomService>();
+builder.Services.AddScoped<IRentalStickService, RentalStickService>();
+builder.Services.AddScoped<IRentalService, RentalService>();
+
+
+
+
+
+
+
 
 var app = builder.Build();
 
