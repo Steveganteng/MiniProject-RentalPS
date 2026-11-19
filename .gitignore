@@ -57,3 +57,8 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+
+# Local configuration
+/RentalPS_BE/appsettings.json
+/RentalPS_BE/appsettings.Development.json
+/RentalPS_BE/Properties/launchSettings.json
