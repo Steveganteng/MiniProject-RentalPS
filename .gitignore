@@ -40,6 +40,20 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
-.vs/ 
-obj/ 
-bin/ 
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# .NET Build
+**/bin/
+**/obj/
+
+# Test Results
+**/TestResults/
+
+# Environment secrets
+.env
+.env.*
+!.env.example

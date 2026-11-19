@@ -80,6 +80,30 @@ builder.Services.AddCors(options =>
               .AllowCredentials();
     });
 });
+builder.Services.AddScoped<IStickTypeService, StickTypeService>();
+builder.Services.AddScoped<IStickService, StickService>();
+
+
+
+builder.Services.AddScoped<IRentalRoomService, RentalRoomService>();
+builder.Services.AddScoped<IRentalStickService, RentalStickService>();
+builder.Services.AddScoped<IRentalService, RentalService>();
+
+
+
+
+
+
+
+
+
+builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
+builder.Services.AddScoped<IRoomService, RoomService>();
+
+
+
+
+
 
 var app = builder.Build();
 
