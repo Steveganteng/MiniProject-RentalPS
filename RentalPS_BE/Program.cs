@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using RentalPS_BE.Logging;
 using RentalPS_BE.Middlewares;
 using RentalPS_BE.Repositories;
 using RentalPS_BE.Services;
@@ -12,10 +12,13 @@ using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Tampilkan log ILogger dari Service dan GlobalExceptionMiddleware ke Console.
+// Log tetap ditampilkan ke Console dan juga disimpan ke folder Logs.
+// File dibuat otomatis per hari, misalnya Logs/rentalps-20261120.log.
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.SetMinimumLevel(LogLevel.Information);
+builder.Logging.AddProvider(
+    new FileLoggerProvider(Path.Combine(builder.Environment.ContentRootPath, "Logs")));
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -102,29 +105,13 @@ builder.Services.AddHttpsRedirection(options =>
 
 builder.Services.AddScoped<IStickTypeService, StickTypeService>();
 builder.Services.AddScoped<IStickService, StickService>();
-
-
-
 builder.Services.AddScoped<IRentalRoomService, RentalRoomService>();
 builder.Services.AddScoped<IRentalStickService, RentalStickService>();
 builder.Services.AddScoped<IRentalService, RentalService>();
 builder.Services.AddScoped<IRentalPricingService, RentalPricingService>();
-
-
-
-
-
-
-
-
-
 builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
 builder.Services.AddScoped<IRoomService, RoomService>();
-
 builder.Services.AddScoped<IPaymentService, PaymentService>();
-
-
-
 
 var app = builder.Build();
 
@@ -135,13 +122,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseMiddleware<GlobalExceptionMiddleware>();
-
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();
