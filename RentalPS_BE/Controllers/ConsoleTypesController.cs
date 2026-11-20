@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RentalPS_BE.DTOs;
 using RentalPS_BE.Services;
@@ -38,8 +38,6 @@ namespace RentalPS_BE.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPost]
-        [Authorize(Roles = "Admin")]
-        [HttpPost]
         public async Task<IActionResult> Create(ConsoleTypeRequest request)
         {
             if (await _consoleTypeService.NameExistsAsync(request.Name))
@@ -58,8 +56,6 @@ namespace RentalPS_BE.Controllers
                 created);
         }
 
-        [Authorize(Roles = "Admin")]
-        [HttpPut("{id:int:min(1)}")]
         [Authorize(Roles = "Admin")]
         [HttpPut("{id:int:min(1)}")]
         public async Task<IActionResult> Update(int id, ConsoleTypeRequest request)

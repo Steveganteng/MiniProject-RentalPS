@@ -1,10 +1,7 @@
-namespace RentalPS_BE.Exceptions
+namespace RentalPS_BE.Exceptions;
+
+/// <summary>Digunakan ketika inventaris tidak tersedia atau jadwalnya bentrok.</summary>
+public sealed class InventoryNotAvailableException : Exception
 {
-    public class InventoryNotAvailableException : Exception
-    {
-        public InventoryNotAvailableException(string inventoryType, string inventoryCode)
-            : base($"{inventoryType} dengan kode {inventoryCode} sedang tidak tersedia.")
-        {
-        }
-    }
+    public InventoryNotAvailableException(string message) : base(message) { }
 }

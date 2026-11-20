@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RentalPS_BE.DTOs;
 using RentalPS_BE.Services;
@@ -62,11 +62,11 @@ namespace RentalPS_BE.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
-            var result = await _service.DeleteAsync(id);
+            var result = await _service.DeactivateAsync(id);
             if (!result)
                 return NotFound(new { message = "Console Unit tidak ditemukan" });
 
-            return Ok(new { message = "Console Unit berhasil dihapus" });
+            return NoContent();
         }
     }
 }

@@ -1,16 +1,19 @@
-﻿using RentalPS_BE.DTOs;
+using RentalPS_BE.DTOs;
 using RentalPS_BE.Repositories;
 using RentalPSMiniProject.Models;
+using Microsoft.Extensions.Logging;
 
 namespace RentalPS_BE.Services
 {
     public class RoomTypeService : IRoomTypeService
     {
+        private readonly ILogger<RoomTypeService> _logger;
         private readonly IRepository<RoomType> _repository;
 
-        public RoomTypeService(IRepository<RoomType> repository)
+        public RoomTypeService(IRepository<RoomType> repository, ILogger<RoomTypeService> logger)
         {
             _repository = repository;
+            _logger = logger;
         }
 
         public async Task<List<RoomTypeResponse>> GetAllAsync()
@@ -56,6 +59,7 @@ namespace RentalPS_BE.Services
 
             await _repository.AddAsync(roomType);
             await _repository.SaveChangesAsync();
+            _logger.LogInformation("Room type {RoomTypeId} ({Name}) created. AdditionalHourlyRate: {HourlyRate}.", roomType.Id, roomType.Name, roomType.AdditionalHourlyRate);
 
             return ToResponse(roomType);
         }
@@ -78,6 +82,7 @@ namespace RentalPS_BE.Services
 
             _repository.Update(roomType);
             await _repository.SaveChangesAsync();
+            _logger.LogInformation("Room type {RoomTypeId} ({Name}) updated.", roomType.Id, roomType.Name);
 
             return ToResponse(roomType);
         }
@@ -93,6 +98,7 @@ namespace RentalPS_BE.Services
 
             roomType.IsActive = false;
             await _repository.SaveChangesAsync();
+            _logger.LogInformation("Room type {RoomTypeId} ({Name}) deactivated.", roomType.Id, roomType.Name);
 
             return true;
         }

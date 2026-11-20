@@ -1,16 +1,32 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using System.Text;
+using RentalPS_BE.Logging;
+using RentalPS_BE.Middlewares;
 using RentalPS_BE.Repositories;
 using RentalPS_BE.Services;
-using RentalPS_BE.Middlewares;
 using RentalPSMiniProject.Data;
+using System.Text;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+// Log tetap ditampilkan ke Console dan juga disimpan ke folder Logs.
+// File dibuat otomatis per hari, misalnya Logs/rentalps-20261120.log.
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.SetMinimumLevel(LogLevel.Information);
+builder.Logging.AddProvider(
+    new FileLoggerProvider(Path.Combine(builder.Environment.ContentRootPath, "Logs")));
+
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(
+            new JsonStringEnumConverter()
+        );
+    });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -89,28 +105,13 @@ builder.Services.AddHttpsRedirection(options =>
 
 builder.Services.AddScoped<IStickTypeService, StickTypeService>();
 builder.Services.AddScoped<IStickService, StickService>();
-
-
-
 builder.Services.AddScoped<IRentalRoomService, RentalRoomService>();
 builder.Services.AddScoped<IRentalStickService, RentalStickService>();
 builder.Services.AddScoped<IRentalService, RentalService>();
-
-
-
-
-
-
-
-
-
+builder.Services.AddScoped<IRentalPricingService, RentalPricingService>();
 builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
 builder.Services.AddScoped<IRoomService, RoomService>();
-
 builder.Services.AddScoped<IPaymentService, PaymentService>();
-
-
-
 
 var app = builder.Build();
 
@@ -121,13 +122,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseMiddleware<GlobalExceptionMiddleware>();
-
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();

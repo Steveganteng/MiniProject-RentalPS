@@ -1,4 +1,4 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
@@ -6,18 +6,21 @@ using Microsoft.IdentityModel.Tokens;
 using RentalPS_BE.DTOs;
 using RentalPSMiniProject.Data;
 using RentalPSMiniProject.Models;
+using Microsoft.Extensions.Logging;
 
 namespace RentalPS_BE.Services
 {
     public class AuthService : IAuthService
     {
+        private readonly ILogger<AuthService> _logger;
         private readonly RentalPSDBContext _context;
         private readonly IConfiguration _configuration;
 
-        public AuthService(RentalPSDBContext context, IConfiguration configuration)
+        public AuthService(RentalPSDBContext context, IConfiguration configuration, ILogger<AuthService> logger)
         {
             _context = context;
             _configuration = configuration;
+            _logger = logger;
         }
 
         public async Task<LoginResponse?> LoginAsync(LoginRequest request)
@@ -32,16 +35,21 @@ namespace RentalPS_BE.Services
 
             if (user == null)
             {
+                _logger.LogWarning("Login failed because the account was not found.");
                 return null;
             }
 
             bool isPasswordValid = user.Password == request.Password;
             if (!isPasswordValid)
             {
+                _logger.LogWarning("Login failed because the supplied credentials were invalid.");
                 return null;
             }
 
             var (token, expiresAt) = GenerateJwtToken(user);
+            _logger.LogInformation(
+                "User {UserId} logged in successfully with role {Role}.",
+                user.Id, user.Role);
 
             return new LoginResponse
             {
@@ -102,6 +110,7 @@ namespace RentalPS_BE.Services
 
             if (existingUser != null)
             {
+                _logger.LogWarning("Registration rejected because the email is already registered.");
                 return new RegisterResponse
                 {
                     Message = "Email sudah terdaftar"
@@ -112,12 +121,16 @@ namespace RentalPS_BE.Services
             {
                 Name = request.Name,
                 Email = request.Email,
-                Password = request.Password, 
+                Password = request.Password,
                 Role = Role.Customer
             };
 
             _context.Users.Add(newUser);
             await _context.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Customer account {UserId} was registered successfully.",
+                newUser.Id);
 
             return new RegisterResponse
             {

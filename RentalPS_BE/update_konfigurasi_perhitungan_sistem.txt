@@ -1,0 +1,86 @@
+-- Rental PS - Master pricing configuration for each developer's local database
+-- Jalankan pada database Rental PS yang benar.
+-- Script ini hanya memperbarui tarif master untuk transaksi BARU.
+-- Tarif snapshot pada Rentals, RentalRooms, RentalSticks, dan Payments tidak diubah.
+
+-- 1. Periksa dulu nama data master agar pola PS3/PS4/PS5/VIP cocok.
+SELECT id, name, hourly_rate, is_active
+FROM "ConsoleTypes"
+ORDER BY id;
+
+SELECT st.id, st.name, ct.name AS console_generation,
+       st.additional_hourly_rate, st.is_active
+FROM "StickTypes" st
+JOIN "ConsoleTypes" ct ON ct.id = st.console_type_id
+ORDER BY ct.id, st.id;
+
+SELECT id, name, additional_hourly_rate, is_active
+FROM "RoomTypes"
+ORDER BY id;
+
+BEGIN;
+
+-- 2. Tarif dasar Console: PS3 = 3.000, PS4 = 4.000, PS5 = 5.000 per jam.
+UPDATE "ConsoleTypes"
+SET hourly_rate = CASE
+    WHEN regexp_replace(upper(name), '[^A-Z0-9]', '', 'g') LIKE '%PS3%'
+      OR regexp_replace(upper(name), '[^A-Z0-9]', '', 'g') LIKE '%PLAYSTATION3%' THEN 3000
+    WHEN regexp_replace(upper(name), '[^A-Z0-9]', '', 'g') LIKE '%PS4%'
+      OR regexp_replace(upper(name), '[^A-Z0-9]', '', 'g') LIKE '%PLAYSTATION4%' THEN 4000
+    WHEN regexp_replace(upper(name), '[^A-Z0-9]', '', 'g') LIKE '%PS5%'
+      OR regexp_replace(upper(name), '[^A-Z0-9]', '', 'g') LIKE '%PLAYSTATION5%' THEN 5000
+    ELSE hourly_rate
+END
+WHERE regexp_replace(upper(name), '[^A-Z0-9]', '', 'g') LIKE '%PS3%'
+   OR regexp_replace(upper(name), '[^A-Z0-9]', '', 'g') LIKE '%PLAYSTATION3%'
+   OR regexp_replace(upper(name), '[^A-Z0-9]', '', 'g') LIKE '%PS4%'
+   OR regexp_replace(upper(name), '[^A-Z0-9]', '', 'g') LIKE '%PLAYSTATION4%'
+   OR regexp_replace(upper(name), '[^A-Z0-9]', '', 'g') LIKE '%PS5%'
+   OR regexp_replace(upper(name), '[^A-Z0-9]', '', 'g') LIKE '%PLAYSTATION5%';
+
+-- 3. Tarif Stick berdasarkan generasi ConsoleType.
+-- PS3 = 2.000, PS4 = 3.000, PS5 = 4.000 per jam.
+UPDATE "StickTypes" st
+SET additional_hourly_rate = CASE
+    WHEN regexp_replace(upper(ct.name), '[^A-Z0-9]', '', 'g') LIKE '%PS3%'
+      OR regexp_replace(upper(ct.name), '[^A-Z0-9]', '', 'g') LIKE '%PLAYSTATION3%' THEN 2000
+    WHEN regexp_replace(upper(ct.name), '[^A-Z0-9]', '', 'g') LIKE '%PS4%'
+      OR regexp_replace(upper(ct.name), '[^A-Z0-9]', '', 'g') LIKE '%PLAYSTATION4%' THEN 3000
+    WHEN regexp_replace(upper(ct.name), '[^A-Z0-9]', '', 'g') LIKE '%PS5%'
+      OR regexp_replace(upper(ct.name), '[^A-Z0-9]', '', 'g') LIKE '%PLAYSTATION5%' THEN 4000
+    ELSE st.additional_hourly_rate
+END
+FROM "ConsoleTypes" ct
+WHERE st.console_type_id = ct.id
+  AND (
+       regexp_replace(upper(ct.name), '[^A-Z0-9]', '', 'g') LIKE '%PS3%'
+    OR regexp_replace(upper(ct.name), '[^A-Z0-9]', '', 'g') LIKE '%PLAYSTATION3%'
+    OR regexp_replace(upper(ct.name), '[^A-Z0-9]', '', 'g') LIKE '%PS4%'
+    OR regexp_replace(upper(ct.name), '[^A-Z0-9]', '', 'g') LIKE '%PLAYSTATION4%'
+    OR regexp_replace(upper(ct.name), '[^A-Z0-9]', '', 'g') LIKE '%PS5%'
+    OR regexp_replace(upper(ct.name), '[^A-Z0-9]', '', 'g') LIKE '%PLAYSTATION5%'
+  );
+
+-- 4. Tarif Room VIP = 50.000 per jam.
+-- Room Regular dibiarkan seperti nilai master yang sekarang karena tarif Regular
+-- belum ditentukan dalam informasi harga tim.
+UPDATE "RoomTypes"
+SET additional_hourly_rate = 50000
+WHERE regexp_replace(upper(name), '[^A-Z0-9]', '', 'g') LIKE '%VIP%';
+
+COMMIT;
+
+-- 5. Verifikasi hasil konfigurasi master.
+SELECT id, name, hourly_rate, is_active
+FROM "ConsoleTypes"
+ORDER BY id;
+
+SELECT st.id, st.name, ct.name AS console_generation,
+       st.additional_hourly_rate, st.is_active
+FROM "StickTypes" st
+JOIN "ConsoleTypes" ct ON ct.id = st.console_type_id
+ORDER BY ct.id, st.id;
+
+SELECT id, name, additional_hourly_rate, is_active
+FROM "RoomTypes"
+ORDER BY id;
