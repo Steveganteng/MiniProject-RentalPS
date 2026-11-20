@@ -29,7 +29,7 @@
   <ng-container *ngIf="!isLoading">
 
     <!-- 1. STATUS SEWA AKTIF & PEMBAYARAN -->
-    <section class="mb-5" *ngIf="activeRental">
+    <section class="mb-5" *ngIf="activeRental; else noActiveRental">
       <h2 class="h5 fw-bold mb-3">Sewa & Pembayaran Aktif</h2>
 
       <div class="card border-primary shadow-sm">
@@ -77,6 +77,44 @@
         </div>
       </div>
     </section>
+    <ng-template #noActiveRental>
+      <div class="alert alert-info mb-5" role="status">
+        Belum ada sewa aktif atau menunggu konfirmasi.
+      </div>
+    </ng-template>
+
+    <section class="mb-5">
+      <h2 class="h5 fw-bold mb-3">Riwayat Sewa</h2>
+      <div class="table-responsive" *ngIf="rentalHistory.length > 0; else noRentalHistory">
+        <table class="table table-striped align-middle">
+          <thead>
+            <tr>
+              <th>Kode Sewa</th>
+              <th>Unit</th>
+              <th>Waktu Mulai</th>
+              <th>Durasi</th>
+              <th>Total</th>
+              <th>Status Sewa</th>
+              <th>Status Pembayaran</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let rental of rentalHistory">
+              <td>{{ rental.rentalCode }}</td>
+              <td>{{ getActiveUnitCode(rental.consoleUnitId) }}</td>
+              <td>{{ rental.startTime | date:'dd MMM yyyy, HH:mm' }}</td>
+              <td>{{ rental.durationHour }} jam</td>
+              <td>Rp {{ rental.totalAmount | number:'1.0-0' }}</td>
+              <td>{{ rental.statusRental }}</td>
+              <td>{{ getPaymentForRental(rental.id)?.paymentStatus || 'Belum ada' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <ng-template #noRentalHistory>
+        <p class="text-muted mb-0">Belum ada riwayat sewa dari server.</p>
+      </ng-template>
+    </section>
 
     <!-- 2. FORM BOOKING & RINCIAN BIAYA -->
     <section id="form-booking" class="mb-5">
@@ -85,6 +123,9 @@
       <div class="card shadow-sm">
         <div class="card-body">
           <form [formGroup]="bookingForm" (ngSubmit)="onSubmitBooking()">
+            <div *ngIf="availableUnits.length === 0" class="alert alert-warning" role="status">
+              Belum ada unit konsol yang tersedia untuk dibooking.
+            </div>
             <div class="row g-3">
               <div class="col-12 col-md-4">
                 <label class="form-label fw-medium">Pilih Unit Konsol</label>
@@ -180,7 +221,7 @@
           <h3 class="h6 fw-bold mb-0">1. Detail Jenis PlayStation & Stik Tambahan</h3>
         </div>
         <div class="card-body">
-          <div class="row g-3">
+          <div class="row g-3" *ngIf="consoleTypes.length > 0; else noConsoleTypes">
             <div class="col-12 col-md-4" *ngFor="let ct of consoleTypes">
               <div class="border rounded p-3 h-100">
                 <div class="d-flex justify-content-between align-items-center mb-2">
@@ -198,6 +239,9 @@
               </div>
             </div>
           </div>
+          <ng-template #noConsoleTypes>
+            <p class="text-muted mb-0">Data tipe konsol belum tersedia dari server.</p>
+          </ng-template>
         </div>
       </div>
 
@@ -207,7 +251,7 @@
           <h3 class="h6 fw-bold mb-0">2. Detail Tipe Ruangan</h3>
         </div>
         <div class="card-body">
-          <div class="row g-3">
+          <div class="row g-3" *ngIf="roomTypes.length > 0; else noRoomTypes">
             <div class="col-12 col-md-4" *ngFor="let rt of roomTypes">
               <div class="border rounded p-3 h-100">
                 <div class="d-flex justify-content-between align-items-center mb-2">
@@ -225,6 +269,9 @@
               </div>
             </div>
           </div>
+          <ng-template #noRoomTypes>
+            <p class="text-muted mb-0">Data tipe ruangan belum tersedia dari server.</p>
+          </ng-template>
         </div>
       </div>
     </section>

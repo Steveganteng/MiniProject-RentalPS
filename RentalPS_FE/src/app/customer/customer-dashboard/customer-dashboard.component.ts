@@ -4,7 +4,19 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { forkJoin, of, switchMap } from 'rxjs';
 import { AuthService } from '../../services/auth/auth.service';
-import { RentalService } from '../../services/customer/rental.service';
+import {
+  ConsoleType,
+  ConsoleUnit,
+  Payment,
+  Rental,
+  RentalRoom,
+  RentalService,
+  RentalStick,
+  Room,
+  RoomType,
+  Stick,
+  StickType
+} from '../../services/customer/rental.service';
 
 @Component({
   selector: 'app-customer-dashboard',
@@ -20,21 +32,20 @@ export class CustomerDashboardComponent implements OnInit {
   private router = inject(Router);
 
   userName = 'Customer';
-  currentUserId = 0;
 
-  // Data Master
-  consoleTypes: any[] = [];
-  consoleUnits: any[] = [];
-  roomTypes: any[] = [];
-  rooms: any[] = [];
-  stickTypes: any[] = [];
-  sticks: any[] = [];
+  consoleTypes: ConsoleType[] = [];
+  consoleUnits: ConsoleUnit[] = [];
+  roomTypes: RoomType[] = [];
+  rooms: Room[] = [];
+  stickTypes: StickType[] = [];
+  sticks: Stick[] = [];
 
-  // Data Transaksi Aktif
-  activeRental: any = null;
-  activePayment: any = null;
-  activeRentalRoom: any = null;
-  activeRentalSticks: any[] = [];
+  activeRental: Rental | null = null;
+  activePayment: Payment | null = null;
+  activeRentalRoom: RentalRoom | null = null;
+  activeRentalSticks: RentalStick[] = [];
+  rentalHistory: Rental[] = [];
+  payments: Payment[] = [];
 
   // State UI
   isLoading = false;
@@ -61,11 +72,6 @@ export class CustomerDashboardComponent implements OnInit {
     if (!token) return;
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
-      this.currentUserId = Number(
-        payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] ||
-        payload['sub'] ||
-        0
-      );
       this.userName =
         payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] ||
         payload['name'] ||
@@ -87,12 +93,14 @@ export class CustomerDashboardComponent implements OnInit {
 
     this.rentalService.getDashboardData().subscribe({
       next: (res) => {
-        this.consoleTypes = res.consoleTypes || [];
-        this.consoleUnits = res.consoleUnits || [];
-        this.roomTypes = res.roomTypes || [];
-        this.rooms = res.rooms || [];
-        this.stickTypes = res.stickTypes || [];
-        this.sticks = res.sticks || [];
+        this.consoleTypes = res.consoleTypes;
+        this.consoleUnits = res.consoleUnits;
+        this.roomTypes = res.roomTypes;
+        this.rooms = res.rooms;
+        this.stickTypes = res.stickTypes;
+        this.sticks = res.sticks;
+        this.rentalHistory = res.rentals;
+        this.payments = res.payments;
 
         // Set default pilihan dropdown pertama yang tersedia
         const firstUnit = this.availableUnits[0];
@@ -105,19 +113,25 @@ export class CustomerDashboardComponent implements OnInit {
         }
 
         // Cari sewa aktif/pending milik user yang login
-        const userRentals = (res.rentals || []).filter(
-          (r: any) =>
-            (this.currentUserId === 0 || r.userId === this.currentUserId) &&
-            ['active', 'pending'].includes(String(r.statusRental).toLowerCase())
+        const activeRentals = res.rentals.filter(
+          (rental) =>
+            ['active', 'pending'].includes(String(rental.statusRental).toLowerCase())
         );
 
-        if (userRentals.length > 0) {
-          this.activeRental = userRentals[userRentals.length - 1];
-          this.activePayment = (res.payments || []).find((p: any) => p.rentalId === this.activeRental.id) || null;
-          this.activeRentalRoom = (res.rentalRooms || []).find((rr: any) => rr.rentalId === this.activeRental.id) || null;
-          this.activeRentalSticks = (res.rentalSticks || []).filter((rs: any) => rs.rentalId === this.activeRental.id);
+        if (activeRentals.length > 0) {
+          this.activeRental = activeRentals[0];
+          this.activePayment =
+            res.payments.find((payment) => payment.rentalId === this.activeRental?.id) || null;
+          this.activeRentalRoom =
+            res.rentalRooms.find((rentalRoom) => rentalRoom.rentalId === this.activeRental?.id) || null;
+          this.activeRentalSticks = res.rentalSticks.filter(
+            (rentalStick) => rentalStick.rentalId === this.activeRental?.id
+          );
         } else {
           this.activeRental = null;
+          this.activePayment = null;
+          this.activeRentalRoom = null;
+          this.activeRentalSticks = [];
         }
 
         this.isLoading = false;
@@ -130,44 +144,44 @@ export class CustomerDashboardComponent implements OnInit {
   }
 
   // --- HELPER FILTER DROPDOWN ---
-  get availableUnits(): any[] {
+  get availableUnits(): ConsoleUnit[] {
     return this.consoleUnits.filter((u) => String(u.statusConsole).toLowerCase() === 'available');
   }
 
-  get availableRooms(): any[] {
+  get availableRooms(): Room[] {
     return this.rooms.filter((r) => String(r.statusRoom).toLowerCase() === 'available');
   }
 
-  get availableSticks(): any[] {
+  get availableSticks(): Stick[] {
     return this.sticks.filter((s) => String(s.statusStick).toLowerCase() === 'available');
   }
 
   // --- HELPER RELASI DATA MASTER ---
-  getConsoleType(id: number): any {
+  getConsoleType(id: number): ConsoleType | undefined {
     return this.consoleTypes.find((c) => c.id === id);
   }
 
-  getRoomType(id: number): any {
+  getRoomType(id: number): RoomType | undefined {
     return this.roomTypes.find((rt) => rt.id === id);
   }
 
-  getStickType(id: number): any {
+  getStickType(id: number): StickType | undefined {
     return this.stickTypes.find((st) => st.id === id);
   }
 
-  getUnitLabel(unit: any): string {
+  getUnitLabel(unit: ConsoleUnit): string {
     const type = this.getConsoleType(unit.consoleTypeId);
     return type ? `${unit.unitCode} — ${type.name} (Rp ${type.hourlyRate.toLocaleString('id-ID')}/jam)` : unit.unitCode;
   }
 
-  getRoomLabel(room: any): string {
+  getRoomLabel(room: Room): string {
     const rt = this.getRoomType(room.roomTypeId);
     const rate = rt ? rt.additionalHourlyRate : 0;
     const typeName = rt ? rt.name : 'Room';
     return `${typeName} ${room.roomNumber} (+Rp ${rate.toLocaleString('id-ID')}/jam)`;
   }
 
-  getStickLabel(stick: any): string {
+  getStickLabel(stick: Stick): string {
     const st = this.getStickType(stick.stickTypeId);
     const rate = st ? st.additionalHourlyRate : 0;
     const typeName = st ? st.name : 'Stick';
@@ -181,7 +195,7 @@ export class CustomerDashboardComponent implements OnInit {
     return list.length > 0 ? list.join(', ') : '-';
   }
 
-  getStickTypeByConsoleType(consoleTypeId: number): any {
+  getStickTypeByConsoleType(consoleTypeId: number): StickType | undefined {
     return this.stickTypes.find((st) => st.consoleTypeId === consoleTypeId);
   }
 
@@ -197,6 +211,10 @@ export class CustomerDashboardComponent implements OnInit {
     if (!unit) return `Unit #${unitId}`;
     const type = this.getConsoleType(unit.consoleTypeId);
     return `${type?.name || ''} — ${unit.unitCode}`;
+  }
+
+  getPaymentForRental(rentalId: number): Payment | undefined {
+    return this.payments.find((payment) => payment.rentalId === rentalId);
   }
 
   // --- KALKULASI HARGA REAL-TIME ---
@@ -246,15 +264,9 @@ export class CustomerDashboardComponent implements OnInit {
     const stickId = Number(formVal.stickId);
 
     const rentalPayload = {
-      rentalCode: `RNT-${Date.now()}`,
-      userId: this.currentUserId,
       consoleUnitId: unitId,
       startTime: start.toISOString(),
-      endTime: end.toISOString(),
-      durationHour: this.duration,
-      consoleRate: this.selectedConsoleRate,
-      totalAmount: this.totalAmount,
-      statusRental: 'Pending'
+      endTime: end.toISOString()
     };
 
     this.rentalService
@@ -262,34 +274,19 @@ export class CustomerDashboardComponent implements OnInit {
       .pipe(
         switchMap((createdRental) => {
           const rentalId = createdRental.id;
-          const selectedRoom = this.rooms.find((r) => r.id === roomId);
-          const selectedRoomType = selectedRoom ? this.getRoomType(selectedRoom.roomTypeId) : null;
 
           const roomReq = roomId
-            ? this.rentalService.createRentalRoom({
-                rentalId,
-                roomId,
-                name: selectedRoomType?.name || 'Room',
-                additionalHourlyRate: this.selectedRoomRate,
-                subTotal: this.selectedRoomRate * this.duration
-              })
+            ? this.rentalService.createRentalRoom({ rentalId, roomId })
             : of(null);
 
           const stickReq = stickId
-            ? this.rentalService.createRentalStick({
-                rentalId,
-                stickId,
-                hourlyRate: this.selectedStickRate,
-                subTotal: this.selectedStickRate * this.duration
-              })
+            ? this.rentalService.createRentalStick({ rentalId, stickId })
             : of(null);
 
           const paymentReq = this.rentalService.createPayment({
             rentalId,
-            paymentCode: `PAY-${Date.now().toString().slice(-5)}`,
             amount: this.totalAmount,
-            paymentMethod: formVal.paymentMethod,
-            paymentStatus: 'Pending'
+            paymentMethod: formVal.paymentMethod
           });
 
           return forkJoin([roomReq, stickReq, paymentReq]);
