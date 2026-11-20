@@ -1,0 +1,36 @@
+<h2>Daftar Ruangan</h2>
+
+<p *ngIf="isLoading">Memuat data...</p>
+<p *ngIf="errorMessage">{{ errorMessage }}</p>
+
+<table *ngIf="!isLoading && !errorMessage" class="table table-striped">
+  <thead>
+    <tr>
+      <th>Nomor Ruangan</th>
+      <th>ID Jenis Ruangan</th>
+      <th>Deskripsi</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <tr *ngFor="let item of rooms">
+      <td>{{ item.roomNumber }}</td>
+      <td>{{ item.roomTypeId }}</td>
+      <td>{{ item.description }}</td>
+      <td>
+        {{
+          item.statusRoom === 'Available'
+            ? 'Tersedia'
+            : item.statusRoom === 'Maintenance'
+              ? 'Maintenance'
+              : 'Tidak aktif'
+        }}
+      </td>
+    </tr>
+
+    <tr *ngIf="rooms.length === 0">
+      <td colspan="4">Belum ada data ruangan.</td>
+    </tr>
+  </tbody>
+</table>

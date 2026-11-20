@@ -1,20 +1,20 @@
 export type RoomStatus =
-  | 'available'
-  | 'maintenance'
-  | 'inactive';
+  | 'Available'
+  | 'Maintenance'
+  | 'Inactive';
 
 export type InventoryStatus =
-  | 'available'
-  | 'in_use'
-  | 'maintenance'
-  | 'inactive';
+  | 'Available'
+  | 'In_Use'
+  | 'Maintenance'
+  | 'Inactive';
+
+export type StickStatus = 0 | 1 | 2 | 3;
 
 export interface ConsoleType {
   id: number;
   name: string;
-  weekdayHourlyRate: number;
-  weekendHourlyRate: number;
-  description: string | null;
+  hourlyRate: number;
   isActive: boolean;
 }
 
@@ -22,7 +22,7 @@ export interface RoomType {
   id: number;
   name: string;
   additionalHourlyRate: number;
-  description: string | null;
+  description: string;
   isActive: boolean;
 }
 
@@ -30,17 +30,18 @@ export interface Room {
   id: number;
   roomTypeId: number;
   roomNumber: string;
-  description: string | null;
-  status: RoomStatus;
+  description: string;
+  statusRoom: RoomStatus;
 }
 
 export interface ConsoleUnit {
   id: number;
   consoleTypeId: number;
+  consoleTypeName: string;
   roomId: number | null;
+  roomNumber: string | null;
   unitCode: string;
-  serialNumber: string | null;
-  status: InventoryStatus;
+  statusConsole: InventoryStatus;
 }
 
 export interface StickType {
@@ -51,9 +52,9 @@ export interface StickType {
   isActive: boolean;
 }
 
-export interface StickUnit {
+export interface Stick {
   id: number;
   stickTypeId: number;
   stickCode: string;
-  status: InventoryStatus;
+  statusStick: StickStatus;
 }

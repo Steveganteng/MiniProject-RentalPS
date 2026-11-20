@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { Title } from '@angular/platform-browser';
-import { DashboardService } from '../../services/dashboard.service';
+import { DashboardService } from '../../services/dashboard/dashboard.service';
 interface SummaryCard {
   title: string;
   value: string | number | null;
