@@ -20,10 +20,11 @@ namespace RentalPS_BE.Controllers
         public async Task<IActionResult> GetAll()
         {
             var rooms = await _roomService.GetAllAsync();
+
             return Ok(rooms);
         }
 
-        [HttpGet("{id:int:min(1)}")]
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id)
         {
             var room = await _roomService.GetByIdAsync(id);
@@ -36,61 +37,41 @@ namespace RentalPS_BE.Controllers
             return Ok(room);
         }
 
-        [Authorize(Roles = "Admin")]
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create(RoomRequest request)
         {
-            try
-            {
-                var created = await _roomService.CreateAsync(request);
+            var created = await _roomService.CreateAsync(request);
 
-                return CreatedAtAction(
-                    nameof(GetById),
-                    new { id = created.Id },
-                    created);
-            }
-            catch (DuplicateRoomNumberException ex)
-            {
-                return Conflict(new { message = ex.Message });
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            return CreatedAtAction(
+                nameof(GetById),
+                new { id = created.Id },
+                created);
         }
 
+        [HttpPut("{id:int}")]
         [Authorize(Roles = "Admin")]
-        [HttpPut("{id:int:min(1)}")]
-        public async Task<IActionResult> Update(int id, RoomRequest request)
+        public async Task<IActionResult> Update(
+            int id,
+            RoomRequest request)
         {
-            try
-            {
-                var updated = await _roomService.UpdateAsync(id, request);
+            var updated = await _roomService.UpdateAsync(id, request);
 
-                if (updated == null)
-                {
-                    return NotFound();
-                }
+            if (updated == null)
+            {
+                return NotFound();
+            }
 
-                return Ok(updated);
-            }
-            catch (DuplicateRoomNumberException ex)
-            {
-                return Conflict(new { message = ex.Message });
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            return Ok(updated);
         }
 
+        [HttpDelete("{id:int}")]
         [Authorize(Roles = "Admin")]
-        [HttpDelete("{id:int:min(1)}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var deactivated = await _roomService.DeactivateAsync(id);
+            var deleted = await _roomService.DeleteAsync(id);
 
-            if (!deactivated)
+            if (!deleted)
             {
                 return NotFound();
             }

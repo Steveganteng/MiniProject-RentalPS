@@ -1,24 +1,23 @@
 using RentalPS_BE.DTOs;
 using RentalPS_BE.Repositories;
 using RentalPSMiniProject.Models;
-using Microsoft.Extensions.Logging;
 
 namespace RentalPS_BE.Services
 {
     public class RoomTypeService : IRoomTypeService
     {
-        private readonly ILogger<RoomTypeService> _logger;
-        private readonly IRepository<RoomType> _repository;
+        private readonly IRepository<RoomType> _roomTypeRepository;
 
-        public RoomTypeService(IRepository<RoomType> repository, ILogger<RoomTypeService> logger)
+        public RoomTypeService(
+            IRepository<RoomType> roomTypeRepository)
         {
-            _repository = repository;
-            _logger = logger;
+            _roomTypeRepository = roomTypeRepository;
         }
 
         public async Task<List<RoomTypeResponse>> GetAllAsync()
         {
-            var roomTypes = await _repository.GetAllAsync();
+            var roomTypes =
+                await _roomTypeRepository.GetAllAsync();
 
             return roomTypes
                 .Select(ToResponse)
@@ -27,39 +26,30 @@ namespace RentalPS_BE.Services
 
         public async Task<RoomTypeResponse?> GetByIdAsync(int id)
         {
-            var roomType = await _repository.GetByIdAsync(id);
+            var roomType =
+                await _roomTypeRepository.GetByIdAsync(id);
 
-            return roomType == null
-                ? null
-                : ToResponse(roomType);
+            if (roomType == null)
+            {
+                return null;
+            }
+
+            return ToResponse(roomType);
         }
 
-        public async Task<bool> NameExistsAsync(string name, int? excludeId = null)
-        {
-            var normalizedName = name.Trim();
-            var roomTypes = await _repository.GetAllAsync();
-
-            return roomTypes.Any(roomType =>
-                (!excludeId.HasValue || roomType.Id != excludeId.Value) &&
-                string.Equals(
-                    roomType.Name.Trim(),
-                    normalizedName,
-                    StringComparison.OrdinalIgnoreCase));
-        }
-
-        public async Task<RoomTypeResponse> CreateAsync(RoomTypeRequest request)
+        public async Task<RoomTypeResponse> CreateAsync(
+            RoomTypeRequest request)
         {
             var roomType = new RoomType
             {
-                Name = request.Name.Trim(),
+                Name = request.Name,
                 AdditionalHourlyRate = request.AdditionalHourlyRate,
-                Description = request.Description.Trim(),
+                Description = request.Description,
                 IsActive = request.IsActive
             };
 
-            await _repository.AddAsync(roomType);
-            await _repository.SaveChangesAsync();
-            _logger.LogInformation("Room type {RoomTypeId} ({Name}) created. AdditionalHourlyRate: {HourlyRate}.", roomType.Id, roomType.Name, roomType.AdditionalHourlyRate);
+            await _roomTypeRepository.AddAsync(roomType);
+            await _roomTypeRepository.SaveChangesAsync();
 
             return ToResponse(roomType);
         }
@@ -68,37 +58,40 @@ namespace RentalPS_BE.Services
             int id,
             RoomTypeRequest request)
         {
-            var roomType = await _repository.GetByIdAsync(id);
+            var roomType =
+                await _roomTypeRepository.GetByIdAsync(id);
 
             if (roomType == null)
             {
                 return null;
             }
 
-            roomType.Name = request.Name.Trim();
+            roomType.Name = request.Name;
             roomType.AdditionalHourlyRate = request.AdditionalHourlyRate;
-            roomType.Description = request.Description.Trim();
+            roomType.Description = request.Description;
             roomType.IsActive = request.IsActive;
 
-            _repository.Update(roomType);
-            await _repository.SaveChangesAsync();
-            _logger.LogInformation("Room type {RoomTypeId} ({Name}) updated.", roomType.Id, roomType.Name);
+            _roomTypeRepository.Update(roomType);
+            await _roomTypeRepository.SaveChangesAsync();
 
             return ToResponse(roomType);
         }
 
-        public async Task<bool> DeactivateAsync(int id)
+        public async Task<bool> DeleteAsync(int id)
         {
-            var roomType = await _repository.GetByIdAsync(id);
+            var roomType =
+                await _roomTypeRepository.GetByIdAsync(id);
 
             if (roomType == null)
             {
                 return false;
             }
 
+            // Soft delete karena RoomType memiliki field IsActive.
             roomType.IsActive = false;
-            await _repository.SaveChangesAsync();
-            _logger.LogInformation("Room type {RoomTypeId} ({Name}) deactivated.", roomType.Id, roomType.Name);
+
+            _roomTypeRepository.Update(roomType);
+            await _roomTypeRepository.SaveChangesAsync();
 
             return true;
         }

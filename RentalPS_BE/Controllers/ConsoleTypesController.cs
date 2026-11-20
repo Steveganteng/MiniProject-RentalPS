@@ -89,9 +89,9 @@ namespace RentalPS_BE.Controllers
         [HttpDelete("{id:int:min(1)}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var deactivated = await _consoleTypeService.DeactivateAsync(id);
+            var deleted = await _consoleTypeService.DeleteAsync(id);
 
-            if (!deactivated)
+            if (!deleted)
             {
                 return NotFound();
             }

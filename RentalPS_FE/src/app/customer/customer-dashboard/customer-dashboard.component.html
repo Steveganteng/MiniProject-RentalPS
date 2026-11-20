@@ -19,6 +19,21 @@
     {{ successMessage }}
   </div>
 
+  <div
+  *ngIf="reminderMessage"
+  class="alert alert-warning alert-dismissible fade show"
+  role="alert"
+>
+  <strong>Pengingat booking:</strong> {{ reminderMessage }}
+
+  <button
+    type="button"
+    class="btn-close"
+    aria-label="Tutup"
+    (click)="reminderMessage = ''"
+  ></button>
+</div>
+
   <!-- Loading Indicator -->
   <div *ngIf="isLoading" class="text-center py-5">
     <div class="spinner-border text-primary" role="status">

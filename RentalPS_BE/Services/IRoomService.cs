@@ -8,6 +8,6 @@ namespace RentalPS_BE.Services
         Task<RoomResponse?> GetByIdAsync(int id);
         Task<RoomResponse> CreateAsync(RoomRequest request);
         Task<RoomResponse?> UpdateAsync(int id, RoomRequest request);
-        Task<bool> DeactivateAsync(int id);
+        Task<bool> DeleteAsync(int id);
     }
 }
