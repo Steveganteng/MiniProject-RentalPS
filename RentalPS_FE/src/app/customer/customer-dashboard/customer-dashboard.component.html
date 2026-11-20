@@ -1,0 +1,234 @@
+<!-- Top Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="#">RentalPS</a>
+    <div class="d-flex align-items-center gap-3">
+      <span class="text-light small">Halo, {{ userName }}</span>
+      <button type="button" class="btn btn-outline-light btn-sm" (click)="logout()">Logout</button>
+    </div>
+  </div>
+</nav>
+
+<main class="container py-4">
+
+  <!-- Alert Error / Sukses -->
+  <div *ngIf="errorMessage" class="alert alert-danger" role="alert">
+    {{ errorMessage }}
+  </div>
+  <div *ngIf="successMessage" class="alert alert-success" role="alert">
+    {{ successMessage }}
+  </div>
+
+  <!-- Loading Indicator -->
+  <div *ngIf="isLoading" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Memuat data...</span>
+    </div>
+  </div>
+
+  <ng-container *ngIf="!isLoading">
+
+    <!-- 1. STATUS SEWA AKTIF & PEMBAYARAN -->
+    <section class="mb-5" *ngIf="activeRental">
+      <h2 class="h5 fw-bold mb-3">Sewa & Pembayaran Aktif</h2>
+
+      <div class="card border-primary shadow-sm">
+        <div class="card-body">
+          <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+            <div>
+              <span class="badge bg-primary me-2">{{ activeRental.statusRental }}</span>
+              <span class="badge bg-success" *ngIf="activePayment">
+                Payment: {{ activePayment.paymentStatus }} ({{ activePayment.paymentMethod }})
+              </span>
+              <h3 class="h5 fw-bold mt-2 mb-0">
+                {{ getActiveUnitCode(activeRental.consoleUnitId) }}
+              </h3>
+              <p class="text-muted small mb-0">
+                Kode Sewa: <strong>{{ activeRental.rentalCode }}</strong>
+                <span *ngIf="activePayment"> • Kode Bayar: <strong>{{ activePayment.paymentCode }}</strong></span>
+              </p>
+            </div>
+            <div class="text-md-end">
+              <span class="text-muted small d-block">Total Tagihan</span>
+              <span class="h5 fw-bold text-dark">Rp {{ activeRental.totalAmount | number:'1.0-0' }}</span>
+            </div>
+          </div>
+
+          <div class="row g-2 bg-light rounded p-3 small">
+            <div class="col-12 col-md-4">
+              <span class="text-muted d-block">Jadwal & Durasi</span>
+              <strong>
+                {{ activeRental.startTime | date:'dd MMM yyyy, HH:mm' }} ({{ activeRental.durationHour }} Jam)
+              </strong>
+            </div>
+            <div class="col-12 col-md-4">
+              <span class="text-muted d-block">Ruangan</span>
+              <strong>
+                {{ activeRentalRoom ? activeRentalRoom.name + ' (+Rp ' + (activeRentalRoom.additionalHourlyRate | number:'1.0-0') + '/jam)' : 'Standard' }}
+              </strong>
+            </div>
+            <div class="col-12 col-md-4">
+              <span class="text-muted d-block">Tambahan Stik</span>
+              <strong>
+                {{ activeRentalSticks.length > 0 ? activeRentalSticks.length + 'x Ekstra Stik' : 'Tanpa Tambahan Stik' }}
+              </strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. FORM BOOKING & RINCIAN BIAYA -->
+    <section id="form-booking" class="mb-5">
+      <h2 class="h5 fw-bold mb-3">Form Booking Unit</h2>
+
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <form [formGroup]="bookingForm" (ngSubmit)="onSubmitBooking()">
+            <div class="row g-3">
+              <div class="col-12 col-md-4">
+                <label class="form-label fw-medium">Pilih Unit Konsol</label>
+                <select class="form-select" formControlName="consoleUnitId">
+                  <option [ngValue]="0" disabled>-- Pilih Unit Tersedia --</option>
+                  <option *ngFor="let unit of availableUnits" [ngValue]="unit.id">
+                    {{ getUnitLabel(unit) }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="col-12 col-md-4">
+                <label class="form-label fw-medium">Pilih Ruangan (Room)</label>
+                <select class="form-select" formControlName="roomId">
+                  <option [ngValue]="0">-- Tanpa Ruangan Khusus --</option>
+                  <option *ngFor="let room of availableRooms" [ngValue]="room.id">
+                    {{ getRoomLabel(room) }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="col-12 col-md-4">
+                <label class="form-label fw-medium">Tambahan Stik (Opsional)</label>
+                <select class="form-select" formControlName="stickId">
+                  <option [ngValue]="0">Tanpa Tambahan Stik (Rp 0/jam)</option>
+                  <option *ngFor="let stick of availableSticks" [ngValue]="stick.id">
+                    {{ getStickLabel(stick) }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="col-12 col-md-4">
+                <label class="form-label fw-medium">Waktu Mulai</label>
+                <input type="datetime-local" class="form-control" formControlName="startTime" />
+              </div>
+
+              <div class="col-12 col-md-4">
+                <label class="form-label fw-medium">Durasi Main (Jam)</label>
+                <input type="number" class="form-control" min="1" max="24" formControlName="durationHour" />
+              </div>
+
+              <div class="col-12 col-md-4">
+                <label class="form-label fw-medium">Metode Pembayaran</label>
+                <select class="form-select" formControlName="paymentMethod">
+                  <option value="Qris">QRIS</option>
+                  <option value="Transfer">Transfer Bank</option>
+                  <option value="Cash">Cash di Kasir</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="alert alert-light border mt-4 mb-3">
+              <div class="d-flex justify-content-between small mb-1">
+                <span>Tarif Konsol (Rp {{ selectedConsoleRate | number:'1.0-0' }} × {{ duration }} jam)</span>
+                <span>Rp {{ (selectedConsoleRate * duration) | number:'1.0-0' }}</span>
+              </div>
+              <div class="d-flex justify-content-between small mb-1">
+                <span>Biaya Ruangan (Rp {{ selectedRoomRate | number:'1.0-0' }} × {{ duration }} jam)</span>
+                <span>Rp {{ (selectedRoomRate * duration) | number:'1.0-0' }}</span>
+              </div>
+              <div class="d-flex justify-content-between small mb-2">
+                <span>Tambahan Stik (Rp {{ selectedStickRate | number:'1.0-0' }} × {{ duration }} jam)</span>
+                <span>Rp {{ (selectedStickRate * duration) | number:'1.0-0' }}</span>
+              </div>
+              <div class="d-flex justify-content-between fw-bold border-top pt-2">
+                <span>Total Amount</span>
+                <span class="text-primary">Rp {{ totalAmount | number:'1.0-0' }}</span>
+              </div>
+            </div>
+
+            <div class="text-end">
+              <button type="submit" class="btn btn-primary px-4" [disabled]="bookingForm.invalid || isSubmitting">
+                {{ isSubmitting ? 'Memproses...' : 'Buat Booking & Bayar' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. INFORMASI & DETAIL FASILITAS -->
+    <section class="mb-4">
+      <div class="mb-3">
+        <h2 class="h5 fw-bold mb-1">Informasi & Detail Fasilitas</h2>
+        <p class="text-muted small mb-0">
+          Rincian tarif dasar konsol, opsi tambahan stik, serta pilihan tipe ruangan yang tersedia.
+        </p>
+      </div>
+
+      <!-- Detail Jenis Konsol & Opsi Stik -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white py-3">
+          <h3 class="h6 fw-bold mb-0">1. Detail Jenis PlayStation & Stik Tambahan</h3>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-12 col-md-4" *ngFor="let ct of consoleTypes">
+              <div class="border rounded p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="fw-bold">{{ ct.name }}</span>
+                  <span class="badge bg-primary">Rp {{ ct.hourlyRate | number:'1.0-0' }} / jam</span>
+                </div>
+                <ul class="list-unstyled small mb-0 border-top pt-2 mt-2">
+                  <li class="mb-1">
+                    <strong>Daftar Unit:</strong> {{ getUnitsByConsoleType(ct.id) }}
+                  </li>
+                  <li *ngIf="getStickTypeByConsoleType(ct.id) as st">
+                    <strong>Ekstra Stik:</strong> {{ st.name }} (+Rp {{ st.additionalHourlyRate | number:'1.0-0' }}/jam)
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detail Jenis Ruangan -->
+      <div class="card shadow-sm">
+        <div class="card-header bg-white py-3">
+          <h3 class="h6 fw-bold mb-0">2. Detail Tipe Ruangan</h3>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-12 col-md-4" *ngFor="let rt of roomTypes">
+              <div class="border rounded p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="fw-bold">{{ rt.name }}</span>
+                  <span class="badge" [ngClass]="rt.additionalHourlyRate === 0 ? 'bg-success' : 'bg-warning text-dark'">
+                    +Rp {{ rt.additionalHourlyRate | number:'1.0-0' }} / jam
+                  </span>
+                </div>
+                <p class="text-muted small mb-2">
+                  {{ rt.description || 'Fasilitas ruangan nyaman untuk bermain.' }}
+                </p>
+                <div class="small border-top pt-2">
+                  <strong>Nomor Ruangan:</strong> {{ getRoomsByRoomType(rt.id) }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </ng-container>
+
+</main>
