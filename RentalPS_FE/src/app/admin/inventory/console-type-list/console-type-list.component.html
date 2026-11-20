@@ -1,0 +1,29 @@
+<h2>Master Tipe PlayStation</h2>
+
+<p *ngIf="isLoading">Memuat data...</p>
+<p *ngIf="errorMessage">{{ errorMessage }}</p>
+
+<table
+  *ngIf="!isLoading && !errorMessage"
+  class="table table-striped"
+>
+  <thead>
+    <tr>
+      <th>Tipe PS</th>
+      <th>Tarif per jam</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <tr *ngFor="let item of consoleTypes">
+      <td>{{ item.name }}</td>
+      <td>{{ item.hourlyRate | currency:'IDR':'symbol':'1.0-0':'id-ID' }}</td>
+      <td>{{ item.isActive ? 'Aktif' : 'Tidak aktif' }}</td>
+    </tr>
+
+    <tr *ngIf="consoleTypes.length === 0">
+      <td colspan="3">Belum ada data tipe PS.</td>
+    </tr>
+  </tbody>
+</table>

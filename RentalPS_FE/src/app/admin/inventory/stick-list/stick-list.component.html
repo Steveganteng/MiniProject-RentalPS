@@ -1,0 +1,29 @@
+<h2>Stik Tersedia</h2>
+
+<p *ngIf="isLoading">Memuat data...</p>
+<p *ngIf="errorMessage">{{ errorMessage }}</p>
+
+<table
+  *ngIf="!isLoading && !errorMessage"
+  class="table table-striped"
+>
+  <thead>
+    <tr>
+      <th>Kode Stik</th>
+      <th>ID Tipe Stik</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <tr *ngFor="let item of availableSticks">
+      <td>{{ item.stickCode }}</td>
+      <td>{{ item.stickTypeId }}</td>
+      <td>Tersedia</td>
+    </tr>
+
+    <tr *ngIf="availableSticks.length === 0">
+      <td colspan="3">Belum ada stik yang tersedia.</td>
+    </tr>
+  </tbody>
+</table>
