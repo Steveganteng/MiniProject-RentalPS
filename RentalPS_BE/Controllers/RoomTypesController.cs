@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using RentalPS_BE.DTOs;
 using RentalPS_BE.Services;
 
@@ -36,6 +37,7 @@ namespace RentalPS_BE.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create(RoomTypeRequest request)
         {
             var created = await _roomTypeService.CreateAsync(request);
@@ -47,6 +49,7 @@ namespace RentalPS_BE.Controllers
         }
 
         [HttpPut("{id:int:min(1)}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Update(int id, RoomTypeRequest request)
         {
             var updated = await _roomTypeService.UpdateAsync(id, request);
@@ -60,6 +63,7 @@ namespace RentalPS_BE.Controllers
         }
 
         [HttpDelete("{id:int:min(1)}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
             var deactivated = await _roomTypeService.DeactivateAsync(id);

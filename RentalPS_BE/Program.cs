@@ -1,16 +1,29 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
-using System.Text;
+using RentalPS_BE.Middlewares;
 using RentalPS_BE.Repositories;
 using RentalPS_BE.Services;
-using RentalPS_BE.Middlewares;
 using RentalPSMiniProject.Data;
+using System.Text;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+// Tampilkan log ILogger dari Service dan GlobalExceptionMiddleware ke Console.
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.SetMinimumLevel(LogLevel.Information);
+
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(
+            new JsonStringEnumConverter()
+        );
+    });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -95,6 +108,7 @@ builder.Services.AddScoped<IStickService, StickService>();
 builder.Services.AddScoped<IRentalRoomService, RentalRoomService>();
 builder.Services.AddScoped<IRentalStickService, RentalStickService>();
 builder.Services.AddScoped<IRentalService, RentalService>();
+builder.Services.AddScoped<IRentalPricingService, RentalPricingService>();
 
 
 

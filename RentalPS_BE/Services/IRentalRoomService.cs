@@ -4,10 +4,10 @@ namespace RentalPS_BE.Services
 {
     public interface IRentalRoomService
     {
-        Task<List<RentalRoomResponse>> GetAllAsync();
-        Task<RentalRoomResponse?> GetByIdAsync(int id);
-        Task<RentalRoomResponse> CreateAsync(RentalRoomRequest request);
-        Task<RentalRoomResponse?> UpdateAsync(int id, RentalRoomRequest request);
-        Task<bool> DeleteAsync(int id);
+        Task<List<RentalRoomResponse>> GetAllAsync(int userId, bool isAdmin);
+        Task<RentalRoomResponse?> GetByIdAsync(int id, int userId, bool isAdmin);
+        Task<RentalRoomResponse> CreateAsync(int userId, RentalRoomRequest request);
+        Task<RentalRoomResponse?> UpdateAsync(int id, int userId, RentalRoomRequest request);
+        Task<bool> DeleteAsync(int id, int userId);
     }
 }

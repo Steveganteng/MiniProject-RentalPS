@@ -1,16 +1,19 @@
-﻿using RentalPS_BE.DTOs;
+using RentalPS_BE.DTOs;
 using RentalPS_BE.Repositories;
 using RentalPSMiniProject.Models;
+using Microsoft.Extensions.Logging;
 
 namespace RentalPS_BE.Services
 {
     public class ConsoleTypeService : IConsoleTypeService
     {
+        private readonly ILogger<ConsoleTypeService> _logger;
         private readonly IRepository<ConsoleType> _repository;
 
-        public ConsoleTypeService(IRepository<ConsoleType> repository)
+        public ConsoleTypeService(IRepository<ConsoleType> repository, ILogger<ConsoleTypeService> logger)
         {
             _repository = repository;
+            _logger = logger;
         }
 
         public async Task<List<ConsoleTypeResponse>> GetAllAsync()
@@ -42,6 +45,7 @@ namespace RentalPS_BE.Services
 
             await _repository.AddAsync(consoleType);
             await _repository.SaveChangesAsync();
+            _logger.LogInformation("Console type {ConsoleTypeId} ({Name}) created. HourlyRate: {HourlyRate}.", consoleType.Id, consoleType.Name, consoleType.HourlyRate);
 
             return ToResponse(consoleType);
         }
@@ -63,6 +67,7 @@ namespace RentalPS_BE.Services
 
             _repository.Update(consoleType);
             await _repository.SaveChangesAsync();
+            _logger.LogInformation("Console type {ConsoleTypeId} ({Name}) updated.", consoleType.Id, consoleType.Name);
 
             return ToResponse(consoleType);
         }
@@ -78,6 +83,7 @@ namespace RentalPS_BE.Services
 
             consoleType.IsActive = false;
             await _repository.SaveChangesAsync();
+            _logger.LogInformation("Console type {ConsoleTypeId} ({Name}) deactivated.", consoleType.Id, consoleType.Name);
 
             return true;
         }

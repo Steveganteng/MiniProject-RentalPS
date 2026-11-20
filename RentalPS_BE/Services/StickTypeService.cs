@@ -1,16 +1,19 @@
 using RentalPS_BE.DTOs;
 using RentalPS_BE.Repositories;
 using RentalPSMiniProject.Models;
+using Microsoft.Extensions.Logging;
 
 namespace RentalPS_BE.Services
 {
     public class StickTypeService : IStickTypeService
     {
+        private readonly ILogger<StickTypeService> _logger;
         private readonly IRepository<StickType> _repository;
 
-        public StickTypeService(IRepository<StickType> repository)
+        public StickTypeService(IRepository<StickType> repository, ILogger<StickTypeService> logger)
         {
             _repository = repository;
+            _logger = logger;
         }
 
         public async Task<List<StickTypeResponse>> GetAllAsync()
@@ -43,6 +46,7 @@ namespace RentalPS_BE.Services
 
             await _repository.AddAsync(stickType);
             await _repository.SaveChangesAsync();
+            _logger.LogInformation("Stick type {StickTypeId} ({Name}) created. AdditionalHourlyRate: {HourlyRate}.", stickType.Id, stickType.Name, stickType.AdditionalHourlyRate);
 
             return ToResponse(stickType);
         }
@@ -65,6 +69,7 @@ namespace RentalPS_BE.Services
 
             _repository.Update(stickType);
             await _repository.SaveChangesAsync();
+            _logger.LogInformation("Stick type {StickTypeId} ({Name}) updated.", stickType.Id, stickType.Name);
 
             return ToResponse(stickType);
         }
@@ -80,6 +85,7 @@ namespace RentalPS_BE.Services
 
             stickType.IsActive = false;
             await _repository.SaveChangesAsync();
+            _logger.LogInformation("Stick type {StickTypeId} ({Name}) deactivated.", stickType.Id, stickType.Name);
 
             return true;
         }

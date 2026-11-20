@@ -1,10 +1,7 @@
-namespace RentalPS_BE.Exceptions
+namespace RentalPS_BE.Exceptions;
+
+/// <summary>Digunakan ketika rentang waktu atau durasi rental tidak valid.</summary>
+public sealed class InvalidRentalDurationException : Exception
 {
-    public class InvalidRentalDurationException : Exception
-    {
-        public InvalidRentalDurationException(decimal durationHours)
-            : base($"Durasi rental ({durationHours}) harus lebih besar dari 0.")
-        {
-        }
-    }
+    public InvalidRentalDurationException(string message) : base(message) { }
 }

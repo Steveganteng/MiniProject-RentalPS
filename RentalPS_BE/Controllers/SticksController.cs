@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RentalPS_BE.DTOs;
 using RentalPS_BE.Services;
@@ -36,44 +37,37 @@ namespace RentalPS_BE.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create(StickRequest request)
         {
-            try
-            {
-                var created = await _stickService.CreateAsync(request);
 
-                return CreatedAtAction(
-                    nameof(GetById),
-                    new { id = created.Id },
-                    created);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            var created = await _stickService.CreateAsync(request);
+
+            return CreatedAtAction(
+                nameof(GetById),
+                new { id = created.Id },
+                created);
+
         }
 
         [HttpPut("{id:int:min(1)}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Update(int id, StickRequest request)
         {
-            try
-            {
-                var updated = await _stickService.UpdateAsync(id, request);
 
-                if (updated == null)
-                {
-                    return NotFound();
-                }
+            var updated = await _stickService.UpdateAsync(id, request);
 
-                return Ok(updated);
-            }
-            catch (ArgumentException ex)
+            if (updated == null)
             {
-                return BadRequest(new { message = ex.Message });
+                return NotFound();
             }
+
+            return Ok(updated);
+
         }
 
         [HttpDelete("{id:int:min(1)}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
             var deactivated = await _stickService.DeactivateAsync(id);
