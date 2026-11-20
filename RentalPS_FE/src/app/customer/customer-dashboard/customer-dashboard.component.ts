@@ -2,7 +2,8 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { forkJoin, of, switchMap } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Observable, concatMap, defer, finalize, from, of, switchMap, toArray } from 'rxjs';
 import { AuthService } from '../../services/auth/auth.service';
 import {
   ConsoleType,
@@ -52,12 +53,14 @@ export class CustomerDashboardComponent implements OnInit {
   isSubmitting = false;
   errorMessage = '';
   successMessage = '';
+  minimumStartTime = this.getDefaultStartTime();
 
   bookingForm = this.fb.nonNullable.group({
     consoleUnitId: [0, [Validators.required, Validators.min(1)]],
     roomId: [0],
-    stickId: [0],
-    startTime: [this.getDefaultStartTime(), Validators.required],
+    stickTypeId: [0],
+    stickQuantity: [0, Validators.min(0)],
+    startTime: [this.minimumStartTime, Validators.required],
     durationHour: [2, [Validators.required, Validators.min(1), Validators.max(24)]],
     paymentMethod: ['Qris', Validators.required]
   });
@@ -83,6 +86,7 @@ export class CustomerDashboardComponent implements OnInit {
 
   private getDefaultStartTime(): string {
     const now = new Date();
+    now.setHours(now.getHours() + 1);
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     return now.toISOString().slice(0, 16);
   }
@@ -156,6 +160,54 @@ export class CustomerDashboardComponent implements OnInit {
     return this.sticks.filter((s) => String(s.statusStick).toLowerCase() === 'available');
   }
 
+  get availableStickTypes(): StickType[] {
+    const unitId = Number(this.bookingForm.controls.consoleUnitId.value);
+    const unit = this.consoleUnits.find((consoleUnit) => consoleUnit.id === unitId);
+
+    if (!unit) return [];
+
+    return this.stickTypes.filter(
+      (stickType) =>
+        stickType.isActive &&
+        stickType.consoleTypeId === unit.consoleTypeId &&
+        this.availableSticks.some((stick) => stick.stickTypeId === stickType.id)
+    );
+  }
+
+  get availableSticksForSelectedType(): Stick[] {
+    const stickTypeId = Number(this.bookingForm.controls.stickTypeId.value);
+    if (!this.availableStickTypes.some((stickType) => stickType.id === stickTypeId)) {
+      return [];
+    }
+    return this.availableSticks.filter((stick) => stick.stickTypeId === stickTypeId);
+  }
+
+  get selectedStickQuantity(): number {
+    const quantity = Number(this.bookingForm.controls.stickQuantity.value);
+    return Number.isInteger(quantity) && quantity > 0 ? quantity : 0;
+  }
+
+  get isStickSelectionInvalid(): boolean {
+    const requestedQuantity = Number(this.bookingForm.controls.stickQuantity.value);
+    return (
+      !Number.isInteger(requestedQuantity) ||
+      requestedQuantity < 0 ||
+      (requestedQuantity > 0 &&
+        !this.availableStickTypes.some(
+          (stickType) => stickType.id === Number(this.bookingForm.controls.stickTypeId.value)
+        )) ||
+      requestedQuantity > this.availableSticksForSelectedType.length
+    );
+  }
+
+  onConsoleUnitChange(): void {
+    this.bookingForm.patchValue({ stickTypeId: 0, stickQuantity: 0 });
+  }
+
+  onStickTypeChange(): void {
+    this.bookingForm.patchValue({ stickQuantity: 0 });
+  }
+
   // --- HELPER RELASI DATA MASTER ---
   getConsoleType(id: number): ConsoleType | undefined {
     return this.consoleTypes.find((c) => c.id === id);
@@ -186,6 +238,10 @@ export class CustomerDashboardComponent implements OnInit {
     const rate = st ? st.additionalHourlyRate : 0;
     const typeName = st ? st.name : 'Stick';
     return `${stick.stickCode} — ${typeName} (+Rp ${rate.toLocaleString('id-ID')}/jam)`;
+  }
+
+  getStickCode(stickId: number): string {
+    return this.sticks.find((stick) => stick.id === stickId)?.stickCode ?? `Stick #${stickId}`;
   }
 
   getUnitsByConsoleType(consoleTypeId: number): string {
@@ -233,24 +289,52 @@ export class CustomerDashboardComponent implements OnInit {
   }
 
   get selectedStickRate(): number {
-    const stickId = Number(this.bookingForm.value.stickId);
-    if (!stickId) return 0;
-    const stick = this.sticks.find((s) => s.id === stickId);
-    const st = stick ? this.getStickType(stick.stickTypeId) : null;
-    return st ? Number(st.additionalHourlyRate) : 0;
+    return this.selectedStickUnitRate * this.selectedStickQuantity;
+  }
+
+  get selectedStickUnitRate(): number {
+    const stickTypeId = Number(this.bookingForm.controls.stickTypeId.value);
+    const stickType = this.getStickType(stickTypeId);
+    return stickType ? Number(stickType.additionalHourlyRate) : 0;
   }
 
   get duration(): number {
     return Number(this.bookingForm.value.durationHour) || 1;
   }
 
+  private get durationDiscountRate(): number {
+    const completedHours = Math.floor(this.duration);
+    if (completedHours >= 3 && completedHours <= 4) return 0.1;
+    if (completedHours >= 5 && completedHours <= 7) return 0.15;
+    if (this.duration > 8) return 0.2;
+    return 0;
+  }
+
+  get consoleSubtotal(): number {
+    return this.selectedConsoleRate * this.duration * (1 - this.durationDiscountRate);
+  }
+
+  get roomSubtotal(): number {
+    const roomId = Number(this.bookingForm.value.roomId);
+    const room = this.rooms.find((availableRoom) => availableRoom.id === roomId);
+    const roomType = room ? this.getRoomType(room.roomTypeId) : undefined;
+    const discount = roomType?.name.toLowerCase().includes('vip')
+      ? this.durationDiscountRate
+      : 0;
+    return this.selectedRoomRate * this.duration * (1 - discount);
+  }
+
+  get stickSubtotal(): number {
+    return this.selectedStickRate * this.duration;
+  }
+
   get totalAmount(): number {
-    return (this.selectedConsoleRate + this.selectedRoomRate + this.selectedStickRate) * this.duration;
+    return this.consoleSubtotal + this.roomSubtotal + this.stickSubtotal;
   }
 
   // --- SUBMIT BOOKING ---
   onSubmitBooking(): void {
-    if (this.bookingForm.invalid || this.isSubmitting) return;
+    if (this.bookingForm.invalid || this.isSubmitting || this.isStickSelectionInvalid) return;
 
     this.isSubmitting = true;
     this.errorMessage = '';
@@ -261,46 +345,74 @@ export class CustomerDashboardComponent implements OnInit {
     const end = new Date(start.getTime() + this.duration * 60 * 60 * 1000);
     const unitId = Number(formVal.consoleUnitId);
     const roomId = Number(formVal.roomId);
-    const stickId = Number(formVal.stickId);
+    const stickIds = this.availableSticksForSelectedType
+      .slice(0, this.selectedStickQuantity)
+      .map((stick) => stick.id);
 
     const rentalPayload = {
       consoleUnitId: unitId,
       startTime: start.toISOString(),
       endTime: end.toISOString()
     };
+    let createdRentalId: number | null = null;
+    let bookingStage = 'membuat rental';
 
     this.rentalService
       .createRental(rentalPayload)
       .pipe(
         switchMap((createdRental) => {
           const rentalId = createdRental.id;
+          createdRentalId = rentalId;
 
-          const roomReq = roomId
-            ? this.rentalService.createRentalRoom({ rentalId, roomId })
+          const roomReq: Observable<RentalRoom | null> = roomId
+            ? defer(() => {
+                bookingStage = 'menambahkan ruangan';
+                return this.rentalService.createRentalRoom({ rentalId, roomId });
+              })
             : of(null);
+          const addSticks = from(stickIds).pipe(
+            concatMap((stickId: number) => {
+              bookingStage = 'menambahkan stik';
+              return this.rentalService.createRentalStick({ rentalId, stickId });
+            }),
+            toArray()
+          );
 
-          const stickReq = stickId
-            ? this.rentalService.createRentalStick({ rentalId, stickId })
-            : of(null);
-
-          const paymentReq = this.rentalService.createPayment({
-            rentalId,
-            amount: this.totalAmount,
-            paymentMethod: formVal.paymentMethod
-          });
-
-          return forkJoin([roomReq, stickReq, paymentReq]);
+          return roomReq.pipe(
+            switchMap(() => addSticks),
+            switchMap(() => {
+              bookingStage = 'mengambil total rental terbaru';
+              return this.rentalService.getRentalById(rentalId);
+            }),
+            switchMap((updatedRental: Rental) => {
+              bookingStage = 'membuat payment';
+              return this.rentalService.createPayment({
+                  rentalId,
+                  amount: updatedRental.totalAmount,
+                  paymentMethod: formVal.paymentMethod
+                });
+            })
+          );
         })
       )
+      .pipe(finalize(() => (this.isSubmitting = false)))
       .subscribe({
-        next: () => {
-          this.isSubmitting = false;
-          this.successMessage = 'Booking berhasil dibuat!';
+        next: (payment) => {
+          this.successMessage =
+            `Booking berhasil dibuat. Payment ${payment.paymentCode} ` +
+            `berstatus ${payment.paymentStatus} dengan jumlah Rp ${payment.amount.toLocaleString('id-ID')}.`;
           this.loadAllData();
         },
-        error: (err) => {
-          this.isSubmitting = false;
-          this.errorMessage = err.error?.message || 'Gagal membuat booking. Periksa kembali inputan atau endpoint backend.';
+        error: (error: HttpErrorResponse) => {
+          const reason =
+            typeof error.error?.message === 'string'
+              ? error.error.message
+              : error.status === 0
+                ? 'Tidak dapat terhubung ke server. Pastikan API sedang berjalan.'
+                : 'Periksa kembali jadwal dan ketersediaan fasilitas.';
+          this.errorMessage = createdRentalId
+            ? `Rental ${createdRentalId} sudah dibuat, tetapi tahap ${bookingStage} gagal. ${reason}`
+            : `Gagal ${bookingStage}. ${reason}`;
         }
       });
   }

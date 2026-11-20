@@ -40,12 +40,18 @@
               <span class="badge bg-success" *ngIf="activePayment">
                 Payment: {{ activePayment.paymentStatus }} ({{ activePayment.paymentMethod }})
               </span>
+              <p class="text-muted small mt-2 mb-0" *ngIf="activePayment">
+                Kode Bayar: <strong>{{ activePayment.paymentCode }}</strong>
+                · Rp {{ activePayment.amount | number:'1.0-0' }}
+                <span *ngIf="activePayment.paidAt">
+                  · Dibayar {{ activePayment.paidAt | date:'dd MMM yyyy, HH:mm' }}
+                </span>
+              </p>
               <h3 class="h5 fw-bold mt-2 mb-0">
                 {{ getActiveUnitCode(activeRental.consoleUnitId) }}
               </h3>
               <p class="text-muted small mb-0">
                 Kode Sewa: <strong>{{ activeRental.rentalCode }}</strong>
-                <span *ngIf="activePayment"> • Kode Bayar: <strong>{{ activePayment.paymentCode }}</strong></span>
               </p>
             </div>
             <div class="text-md-end">
@@ -58,20 +64,32 @@
             <div class="col-12 col-md-4">
               <span class="text-muted d-block">Jadwal & Durasi</span>
               <strong>
-                {{ activeRental.startTime | date:'dd MMM yyyy, HH:mm' }} ({{ activeRental.durationHour }} Jam)
+                {{ activeRental.startTime | date:'dd MMM yyyy, HH:mm' }}
+                – {{ activeRental.endTime | date:'dd MMM yyyy, HH:mm' }}
+                ({{ activeRental.durationHour }} jam)
               </strong>
             </div>
             <div class="col-12 col-md-4">
               <span class="text-muted d-block">Ruangan</span>
-              <strong>
-                {{ activeRentalRoom ? activeRentalRoom.name + ' (+Rp ' + (activeRentalRoom.additionalHourlyRate | number:'1.0-0') + '/jam)' : 'Standard' }}
-              </strong>
+              <div *ngIf="activeRentalRoom; else standardRoom">
+                <strong>{{ activeRentalRoom.name }}</strong>
+                <div>
+                  Tarif tambahan: Rp {{ activeRentalRoom.additionalHourlyRate | number:'1.0-0' }}/jam
+                </div>
+                <div>Subtotal: Rp {{ activeRentalRoom.subTotal | number:'1.0-0' }}</div>
+              </div>
+              <ng-template #standardRoom><strong>Standard</strong></ng-template>
             </div>
             <div class="col-12 col-md-4">
               <span class="text-muted d-block">Tambahan Stik</span>
-              <strong>
-                {{ activeRentalSticks.length > 0 ? activeRentalSticks.length + 'x Ekstra Stik' : 'Tanpa Tambahan Stik' }}
-              </strong>
+              <div *ngIf="activeRentalSticks.length > 0; else noRentalSticks">
+                <div *ngFor="let rentalStick of activeRentalSticks">
+                  <strong>{{ getStickCode(rentalStick.stickId) }}</strong>
+                  — Rp {{ rentalStick.hourlyRate | number:'1.0-0' }}/jam
+                  (subtotal Rp {{ rentalStick.subTotal | number:'1.0-0' }})
+                </div>
+              </div>
+              <ng-template #noRentalSticks><strong>Tanpa tambahan stik</strong></ng-template>
             </div>
           </div>
         </div>
@@ -129,7 +147,7 @@
             <div class="row g-3">
               <div class="col-12 col-md-4">
                 <label class="form-label fw-medium">Pilih Unit Konsol</label>
-                <select class="form-select" formControlName="consoleUnitId">
+                <select class="form-select" formControlName="consoleUnitId" (change)="onConsoleUnitChange()">
                   <option [ngValue]="0" disabled>-- Pilih Unit Tersedia --</option>
                   <option *ngFor="let unit of availableUnits" [ngValue]="unit.id">
                     {{ getUnitLabel(unit) }}
@@ -148,18 +166,46 @@
               </div>
 
               <div class="col-12 col-md-4">
-                <label class="form-label fw-medium">Tambahan Stik (Opsional)</label>
-                <select class="form-select" formControlName="stickId">
-                  <option [ngValue]="0">Tanpa Tambahan Stik (Rp 0/jam)</option>
-                  <option *ngFor="let stick of availableSticks" [ngValue]="stick.id">
-                    {{ getStickLabel(stick) }}
+                <label class="form-label fw-medium">Jenis Stik Tambahan (Opsional)</label>
+                <select
+                  class="form-select"
+                  formControlName="stickTypeId"
+                  (change)="onStickTypeChange()"
+                >
+                  <option [ngValue]="0">Tanpa tambahan stik</option>
+                  <option *ngFor="let stickType of availableStickTypes" [ngValue]="stickType.id">
+                    {{ stickType.name }} (Rp {{ stickType.additionalHourlyRate | number:'1.0-0' }}/jam)
                   </option>
                 </select>
               </div>
 
               <div class="col-12 col-md-4">
+                <label class="form-label fw-medium" for="stickQuantity">Jumlah Stik Tambahan</label>
+                <input
+                  id="stickQuantity"
+                  type="number"
+                  class="form-control"
+                  formControlName="stickQuantity"
+                  min="0"
+                  step="1"
+                  [max]="availableSticksForSelectedType.length"
+                />
+                <small class="text-muted">
+                  Stok tersedia: {{ availableSticksForSelectedType.length }}
+                </small>
+                <div *ngIf="isStickSelectionInvalid" class="text-danger small">
+                  Pilih jenis stik yang sesuai dengan konsol dan jumlah dalam batas stok tersedia.
+                </div>
+              </div>
+
+              <div class="col-12 col-md-4">
                 <label class="form-label fw-medium">Waktu Mulai</label>
-                <input type="datetime-local" class="form-control" formControlName="startTime" />
+                <input
+                  type="datetime-local"
+                  class="form-control"
+                  formControlName="startTime"
+                  [min]="minimumStartTime"
+                />
               </div>
 
               <div class="col-12 col-md-4">
@@ -180,15 +226,17 @@
             <div class="alert alert-light border mt-4 mb-3">
               <div class="d-flex justify-content-between small mb-1">
                 <span>Tarif Konsol (Rp {{ selectedConsoleRate | number:'1.0-0' }} × {{ duration }} jam)</span>
-                <span>Rp {{ (selectedConsoleRate * duration) | number:'1.0-0' }}</span>
+                <span>Rp {{ consoleSubtotal | number:'1.0-0' }}</span>
               </div>
               <div class="d-flex justify-content-between small mb-1">
                 <span>Biaya Ruangan (Rp {{ selectedRoomRate | number:'1.0-0' }} × {{ duration }} jam)</span>
-                <span>Rp {{ (selectedRoomRate * duration) | number:'1.0-0' }}</span>
+                <span>Rp {{ roomSubtotal | number:'1.0-0' }}</span>
               </div>
               <div class="d-flex justify-content-between small mb-2">
-                <span>Tambahan Stik (Rp {{ selectedStickRate | number:'1.0-0' }} × {{ duration }} jam)</span>
-                <span>Rp {{ (selectedStickRate * duration) | number:'1.0-0' }}</span>
+                <span>
+                  Tambahan Stik ({{ selectedStickQuantity }} × Rp {{ selectedStickUnitRate | number:'1.0-0' }} × {{ duration }} jam)
+                </span>
+                <span>Rp {{ stickSubtotal | number:'1.0-0' }}</span>
               </div>
               <div class="d-flex justify-content-between fw-bold border-top pt-2">
                 <span>Total Amount</span>
@@ -197,8 +245,12 @@
             </div>
 
             <div class="text-end">
-              <button type="submit" class="btn btn-primary px-4" [disabled]="bookingForm.invalid || isSubmitting">
-                {{ isSubmitting ? 'Memproses...' : 'Buat Booking & Bayar' }}
+              <button
+                type="submit"
+                class="btn btn-primary px-4"
+                [disabled]="bookingForm.invalid || isSubmitting || isStickSelectionInvalid"
+              >
+                {{ isSubmitting ? 'Memproses...' : 'Buat Booking & Payment' }}
               </button>
             </div>
           </form>

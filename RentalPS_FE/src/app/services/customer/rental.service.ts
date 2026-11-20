@@ -148,6 +148,10 @@ export class RentalService {
     });
   }
 
+  getRentalById(id: number): Observable<Rental> {
+    return this.http.get<Rental>(`${this.baseUrl}/rentals/${id}`);
+  }
+
   createRental(request: CreateRentalRequest): Observable<Rental> {
     return this.http.post<Rental>(`${this.baseUrl}/rentals`, request);
   }
