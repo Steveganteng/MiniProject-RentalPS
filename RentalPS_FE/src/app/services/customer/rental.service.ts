@@ -61,7 +61,7 @@ export interface Rental {
   durationHour: number;
   consoleRate: number;
   totalAmount: number;
-  statusRental: string;
+  statusRental: string | number;
 }
 
 export interface RentalRoom {
@@ -86,8 +86,8 @@ export interface Payment {
   rentalId: number;
   paymentCode: string;
   amount: number;
-  paymentMethod: string;
-  paymentStatus: string;
+  paymentMethod: string | number;
+  paymentStatus: string | number;
   paidAt: string | null;
 }
 
@@ -148,6 +148,10 @@ export class RentalService {
     });
   }
 
+  getRental(id: number): Observable<Rental> {
+    return this.http.get<Rental>(`${this.baseUrl}/rentals/${id}`);
+  }
+
   createRental(request: CreateRentalRequest): Observable<Rental> {
     return this.http.post<Rental>(`${this.baseUrl}/rentals`, request);
   }
@@ -162,5 +166,9 @@ export class RentalService {
 
   createPayment(request: CreatePaymentRequest): Observable<Payment> {
     return this.http.post<Payment>(`${this.baseUrl}/payments`, request);
+  }
+
+  cancelRental(id: number): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/rentals/${id}/cancel`, {});
   }
 }

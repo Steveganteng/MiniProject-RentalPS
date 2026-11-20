@@ -1,0 +1,88 @@
+.inventory-page {
+  color: #172033;
+}
+
+.inventory-stat {
+  height: 100%;
+  min-height: 92px;
+  padding: 14px 16px;
+  border: 1px solid #e4e8ef;
+  border-radius: 12px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.inventory-stat span {
+  color: #687386;
+  font-size: 0.82rem;
+}
+
+.inventory-stat strong {
+  font-size: 1.55rem;
+  line-height: 1;
+}
+
+.inventory-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.inventory-tab {
+  border: 1px solid #d9e0ea;
+  border-radius: 999px;
+  background: #fff;
+  color: #40506a;
+  padding: 8px 13px;
+  font-size: 0.88rem;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.inventory-tab:hover {
+  border-color: #0d6efd;
+  color: #0d6efd;
+}
+
+.inventory-tab.active {
+  border-color: #0d6efd;
+  background: #0d6efd;
+  color: #fff;
+}
+
+.form-panel {
+  background: #fbfcfe;
+  position: sticky;
+  top: 16px;
+}
+
+.table th {
+  white-space: nowrap;
+  font-size: 0.83rem;
+  color: #566174;
+}
+
+.table td {
+  font-size: 0.9rem;
+}
+
+@media (max-width: 1199px) {
+  .form-panel {
+    position: static;
+  }
+}
+
+
+/* Editor hanya ditampilkan setelah Admin memilih Tambah Data atau Edit. */
+.form-panel {
+  animation: editor-enter 160ms ease-out;
+}
+
+@keyframes editor-enter {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}

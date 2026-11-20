@@ -1,0 +1,35 @@
+
+.customer-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1055;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.58);
+  overflow-y: auto;
+}
+
+.customer-modal {
+  width: min(100%, 820px);
+  max-height: calc(100vh - 2rem);
+  overflow: hidden;
+  border: 0;
+  border-radius: 0.85rem;
+}
+
+.customer-modal .card-body {
+  overflow-y: auto;
+}
+
+@media (max-width: 576px) {
+  .customer-modal-backdrop {
+    align-items: flex-start;
+    padding: 0.5rem;
+  }
+
+  .customer-modal {
+    max-height: calc(100vh - 1rem);
+  }
+}

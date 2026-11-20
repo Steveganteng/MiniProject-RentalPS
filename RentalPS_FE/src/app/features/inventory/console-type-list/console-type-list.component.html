@@ -1,21 +1,25 @@
-<h2>Master Tipe PlayStation</h2>
-
-<table class="table">
-  <thead>
-    <tr>
-      <th>Tipe PS</th>
-      <th>Tarif Weekday</th>
-      <th>Tarif Weekend</th>
-      <th>Status</th>
-    </tr>
-  </thead>
-
-  <tbody>
-    <tr *ngFor="let item of consoleTypes">
-      <td>{{ item.name }}</td>
-      <td>{{ item.weekdayHourlyRate | currency:'IDR':'symbol':'1.0-0':'id-ID' }}</td>
-      <td>{{ item.weekendHourlyRate | currency:'IDR':'symbol':'1.0-0':'id-ID' }}</td>
-      <td>{{ item.isActive ? 'Aktif' : 'Tidak aktif' }}</td>
-    </tr>
-  </tbody>
-</table>
+<div class="container-fluid py-3">
+  <h2 class="h4 fw-bold">Master Tipe PlayStation</h2>
+  <div *ngIf="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>Tipe PS</th>
+          <th>Tarif Dasar / Jam</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of consoleTypes">
+          <td>{{ item.name }}</td>
+          <td>{{ item.hourlyRate | currency:'IDR':'symbol':'1.0-0':'id-ID' }}</td>
+          <td>{{ item.isActive ? 'Aktif' : 'Tidak aktif' }}</td>
+        </tr>
+        <tr *ngIf="consoleTypes.length === 0">
+          <td colspan="3" class="text-center text-muted">Belum ada tipe konsol.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
