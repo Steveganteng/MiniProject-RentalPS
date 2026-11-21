@@ -603,7 +603,7 @@ export class CustomerDashboardComponent implements OnInit {
         error: (error: unknown) => {
           const apiError = error as { error?: { message?: string } };
           this.errorMessage = apiError.error?.message ||
-            'Rental tidak dapat dibatalkan. Periksa status Rental dan pembayaran Anda.';
+            'Rental tidak dapat dibatalkan karena fitur refund belum tersedia.';
         }
       });
   }
