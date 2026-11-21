@@ -1,15 +1,5 @@
-export type RoomStatus =
-  | 'Available'
-  | 'Maintenance'
-  | 'Inactive';
-
-export type InventoryStatus =
-  | 'Available'
-  | 'In_Use'
-  | 'Maintenance'
-  | 'Inactive';
-
-export type StickStatus = 0 | 1 | 2 | 3;
+export type InventoryStatus = 'Available' | 'In_Use' | 'Maintenance' | 'Inactive';
+export type RoomStatus = 'Available' | 'Maintenance' | 'Inactive';
 
 export interface ConsoleType {
   id: number;
@@ -22,7 +12,7 @@ export interface RoomType {
   id: number;
   name: string;
   additionalHourlyRate: number;
-  description: string;
+  description: string | null;
   isActive: boolean;
 }
 
@@ -30,7 +20,7 @@ export interface Room {
   id: number;
   roomTypeId: number;
   roomNumber: string;
-  description: string;
+  description: string | null;
   statusRoom: RoomStatus;
 }
 
@@ -52,9 +42,9 @@ export interface StickType {
   isActive: boolean;
 }
 
-export interface Stick {
+export interface StickUnit {
   id: number;
   stickTypeId: number;
   stickCode: string;
-  statusStick: StickStatus;
+  statusStick: InventoryStatus;
 }

@@ -1,0 +1,205 @@
+<div class="container-fluid py-4 inventory-page">
+  <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+    <div>
+      <a routerLink="/admin/dashboard" class="small text-decoration-none">← Kembali ke Dashboard</a>
+      <h1 class="h3 fw-bold mt-2 mb-1">Pengelolaan Master Data & Inventaris</h1>
+      <p class="text-muted mb-0">Kelola tipe konsol, unit konsol, tipe ruangan, ruangan, tipe stik, dan unit stik.</p>
+    </div>
+    <button class="btn btn-outline-secondary" type="button" (click)="logout()">Logout</button>
+  </div>
+
+  <div *ngIf="pageError" class="alert alert-danger" role="alert">{{ pageError }}</div>
+  <div *ngIf="successMessage" class="alert alert-success" role="status">{{ successMessage }}</div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="inventory-stat"><span>Tipe Konsol</span><strong>{{ consoleTypes.length }}</strong></div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="inventory-stat"><span>Unit Konsol</span><strong>{{ consoleUnits.length }}</strong></div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="inventory-stat"><span>Tipe Ruangan</span><strong>{{ roomTypes.length }}</strong></div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="inventory-stat"><span>Ruangan</span><strong>{{ rooms.length }}</strong></div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="inventory-stat"><span>Tipe Stik</span><strong>{{ stickTypes.length }}</strong></div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="inventory-stat"><span>Unit Stik</span><strong>{{ sticks.length }}</strong></div>
+    </div>
+  </div>
+
+  <section class="card border-0 shadow-sm">
+    <div class="card-header bg-white p-3">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <div>
+          <h2 class="h5 fw-bold mb-1">Data Inventaris</h2>
+          <p class="text-muted small mb-0">{{ activeTabInfo.description }}</p>
+        </div>
+        <button class="btn btn-primary" type="button" (click)="startCreate()" [disabled]="isLoading || isSaving">
+          + Tambah Data
+        </button>
+      </div>
+      <div class="inventory-tabs" role="tablist" aria-label="Kategori inventaris">
+        <button *ngFor="let tab of tabs" type="button" class="inventory-tab"
+          [class.active]="activeTab === tab.key" (click)="selectTab(tab.key)">
+          {{ tab.label }}
+        </button>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div *ngIf="isLoading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Memuat data...</span></div>
+      </div>
+
+      <ng-container *ngIf="!isLoading">
+        <div class="row g-4">
+          <div class="col-12" [class.col-xl-7]="isEditorVisible" [class.col-xl-12]="!isEditorVisible">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h3 class="h6 fw-bold mb-0">Daftar {{ activeTabInfo.label }}</h3>
+              <span class="badge text-bg-light">{{ activeCount }} data</span>
+            </div>
+            <div class="table-responsive border rounded" [ngSwitch]="activeTab">
+              <table *ngSwitchCase="'console-types'" class="table table-hover align-middle mb-0">
+                <thead class="table-light"><tr><th>Nama Tipe</th><th>Tarif / Jam</th><th>Status</th><th class="text-end">Aksi</th></tr></thead>
+                <tbody>
+                  <tr *ngFor="let item of consoleTypes">
+                    <td class="fw-semibold">{{ item.name }}</td><td>{{ item.hourlyRate | currency:'IDR':'symbol':'1.0-0':'id-ID' }}</td>
+                    <td><span class="badge" [ngClass]="item.isActive ? 'text-bg-success' : 'text-bg-secondary'">{{ item.isActive ? 'Aktif' : 'Nonaktif' }}</span></td>
+                    <td class="text-end text-nowrap"><button class="btn btn-sm btn-outline-primary me-1" (click)="editConsoleType(item)">Edit</button><button class="btn btn-sm btn-outline-danger" (click)="deactivate(item.id, item.name)" [disabled]="!item.isActive">Nonaktifkan</button></td>
+                  </tr>
+                  <tr *ngIf="consoleTypes.length === 0"><td colspan="4" class="text-center text-muted py-4">Belum ada tipe konsol.</td></tr>
+                </tbody>
+              </table>
+
+              <table *ngSwitchCase="'console-units'" class="table table-hover align-middle mb-0">
+                <thead class="table-light"><tr><th>Kode Unit</th><th>Generasi</th><th>Ruangan</th><th>Status</th><th class="text-end">Aksi</th></tr></thead>
+                <tbody>
+                  <tr *ngFor="let item of consoleUnits">
+                    <td class="fw-semibold">{{ item.unitCode }}</td><td>{{ item.consoleTypeName || getConsoleTypeName(item.consoleTypeId) }}</td><td>{{ item.roomNumber || 'Belum ditempatkan' }}</td>
+                    <td><span class="badge" [ngClass]="statusClass(item.statusConsole)">{{ statusLabel(item.statusConsole) }}</span></td>
+                    <td class="text-end text-nowrap"><button class="btn btn-sm btn-outline-primary me-1" (click)="editConsoleUnit(item)" [disabled]="isInUse(item.statusConsole)" title="Unit yang sedang digunakan tidak dapat diedit">Edit</button><button class="btn btn-sm btn-outline-danger" (click)="deactivate(item.id, item.unitCode)" [disabled]="isInUse(item.statusConsole) || normalizeForTemplate(item.statusConsole) === 'inactive'">Nonaktifkan</button></td>
+                  </tr>
+                  <tr *ngIf="consoleUnits.length === 0"><td colspan="5" class="text-center text-muted py-4">Belum ada unit konsol.</td></tr>
+                </tbody>
+              </table>
+
+              <table *ngSwitchCase="'room-types'" class="table table-hover align-middle mb-0">
+                <thead class="table-light"><tr><th>Nama Tipe</th><th>Tarif Tambahan / Jam</th><th>Keterangan</th><th>Status</th><th class="text-end">Aksi</th></tr></thead>
+                <tbody>
+                  <tr *ngFor="let item of roomTypes">
+                    <td class="fw-semibold">{{ item.name }}</td><td>{{ item.additionalHourlyRate | currency:'IDR':'symbol':'1.0-0':'id-ID' }}</td><td>{{ item.description || '—' }}</td>
+                    <td><span class="badge" [ngClass]="item.isActive ? 'text-bg-success' : 'text-bg-secondary'">{{ item.isActive ? 'Aktif' : 'Nonaktif' }}</span></td>
+                    <td class="text-end text-nowrap"><button class="btn btn-sm btn-outline-primary me-1" (click)="editRoomType(item)">Edit</button><button class="btn btn-sm btn-outline-danger" (click)="deactivate(item.id, item.name)" [disabled]="!item.isActive">Nonaktifkan</button></td>
+                  </tr>
+                  <tr *ngIf="roomTypes.length === 0"><td colspan="5" class="text-center text-muted py-4">Belum ada tipe ruangan.</td></tr>
+                </tbody>
+              </table>
+
+              <table *ngSwitchCase="'rooms'" class="table table-hover align-middle mb-0">
+                <thead class="table-light"><tr><th>Nomor Ruangan</th><th>Tipe</th><th>Keterangan</th><th>Status</th><th class="text-end">Aksi</th></tr></thead>
+                <tbody>
+                  <tr *ngFor="let item of rooms">
+                    <td class="fw-semibold">{{ item.roomNumber }}</td><td>{{ getRoomTypeName(item.roomTypeId) }}</td><td>{{ item.description || '—' }}</td>
+                    <td><span class="badge" [ngClass]="statusClass(item.statusRoom)">{{ statusLabel(item.statusRoom) }}</span></td>
+                    <td class="text-end text-nowrap"><button class="btn btn-sm btn-outline-primary me-1" (click)="editRoom(item)">Edit</button><button class="btn btn-sm btn-outline-danger" (click)="deactivate(item.id, 'Ruangan ' + item.roomNumber)" [disabled]="normalizeForTemplate(item.statusRoom) === 'inactive'">Nonaktifkan</button></td>
+                  </tr>
+                  <tr *ngIf="rooms.length === 0"><td colspan="5" class="text-center text-muted py-4">Belum ada ruangan.</td></tr>
+                </tbody>
+              </table>
+
+              <table *ngSwitchCase="'stick-types'" class="table table-hover align-middle mb-0">
+                <thead class="table-light"><tr><th>Nama Tipe Stik</th><th>Generasi PS</th><th>Tarif / Jam</th><th>Status</th><th class="text-end">Aksi</th></tr></thead>
+                <tbody>
+                  <tr *ngFor="let item of stickTypes">
+                    <td class="fw-semibold">{{ item.name }}</td><td>{{ getConsoleTypeName(item.consoleTypeId) }}</td><td>{{ item.additionalHourlyRate | currency:'IDR':'symbol':'1.0-0':'id-ID' }}</td>
+                    <td><span class="badge" [ngClass]="item.isActive ? 'text-bg-success' : 'text-bg-secondary'">{{ item.isActive ? 'Aktif' : 'Nonaktif' }}</span></td>
+                    <td class="text-end text-nowrap"><button class="btn btn-sm btn-outline-primary me-1" (click)="editStickType(item)">Edit</button><button class="btn btn-sm btn-outline-danger" (click)="deactivate(item.id, item.name)" [disabled]="!item.isActive">Nonaktifkan</button></td>
+                  </tr>
+                  <tr *ngIf="stickTypes.length === 0"><td colspan="5" class="text-center text-muted py-4">Belum ada tipe stik.</td></tr>
+                </tbody>
+              </table>
+
+              <table *ngSwitchCase="'sticks'" class="table table-hover align-middle mb-0">
+                <thead class="table-light"><tr><th>Kode Stik</th><th>Tipe Stik</th><th>Status</th><th class="text-end">Aksi</th></tr></thead>
+                <tbody>
+                  <tr *ngFor="let item of sticks">
+                    <td class="fw-semibold">{{ item.stickCode }}</td><td>{{ getStickTypeName(item.stickTypeId) }}</td>
+                    <td><span class="badge" [ngClass]="statusClass(item.statusStick)">{{ statusLabel(item.statusStick) }}</span></td>
+                    <td class="text-end text-nowrap"><button class="btn btn-sm btn-outline-primary me-1" (click)="editStick(item)" [disabled]="isInUse(item.statusStick)" title="Stik yang sedang digunakan tidak dapat diedit">Edit</button><button class="btn btn-sm btn-outline-danger" (click)="deactivate(item.id, item.stickCode)" [disabled]="isInUse(item.statusStick) || normalizeForTemplate(item.statusStick) === 'inactive'">Nonaktifkan</button></td>
+                  </tr>
+                  <tr *ngIf="sticks.length === 0"><td colspan="4" class="text-center text-muted py-4">Belum ada unit stik.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="col-12 col-xl-5" *ngIf="isEditorVisible">
+            <div class="form-panel border rounded p-3">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="h6 fw-bold mb-0">{{ editingId === null ? 'Tambah' : 'Edit' }} {{ activeTabInfo.label }}</h3>
+                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="closeEditor()" [disabled]="isSaving">Tutup Form</button>
+              </div>
+              <div *ngIf="formError" class="alert alert-danger py-2" role="alert">{{ formError }}</div>
+
+              <form (ngSubmit)="save()" #inventoryForm="ngForm">
+                <ng-container [ngSwitch]="activeTab">
+                  <ng-container *ngSwitchCase="'console-types'">
+                    <div class="mb-3"><label class="form-label">Nama Tipe Konsol</label><input class="form-control" name="consoleName" [(ngModel)]="form['name']" required maxlength="100" placeholder="Contoh: PS5"></div>
+                    <div class="mb-3"><label class="form-label">Tarif Dasar per Jam (Rp)</label><input class="form-control" name="consoleRate" type="number" min="0" step="1" [(ngModel)]="form['hourlyRate']" required></div>
+                    <div class="form-check mb-3"><input class="form-check-input" id="consoleActive" name="consoleActive" type="checkbox" [(ngModel)]="form['isActive']"><label class="form-check-label" for="consoleActive">Aktif</label></div>
+                  </ng-container>
+
+                  <ng-container *ngSwitchCase="'console-units'">
+                    <div class="mb-3"><label class="form-label">Tipe Konsol</label><select class="form-select" name="consoleTypeId" [(ngModel)]="form['consoleTypeId']" required><option [ngValue]="null">Pilih tipe konsol</option><option *ngFor="let item of consoleTypes" [ngValue]="item.id" [disabled]="!item.isActive">{{ item.name }}{{ item.isActive ? '' : ' (Nonaktif)' }}</option></select></div>
+                    <div class="mb-3"><label class="form-label">Kode Unit</label><input class="form-control" name="unitCode" [(ngModel)]="form['unitCode']" required maxlength="50" placeholder="Contoh: PS5-001"></div>
+                    <div class="mb-3"><label class="form-label">Ruangan</label><select class="form-select" name="roomId" [(ngModel)]="form['roomId']"><option [ngValue]="null">Belum ditempatkan</option><option *ngFor="let item of rooms" [ngValue]="item.id" [disabled]="item.statusRoom !== 'Available'">{{ item.roomNumber }} — {{ getRoomTypeName(item.roomTypeId) }} ({{ statusLabel(item.statusRoom) }})</option></select></div>
+                    <div class="mb-3"><label class="form-label">Status Unit</label><select class="form-select" name="statusConsole" [(ngModel)]="form['statusConsole']" required><option *ngFor="let status of inventoryStatuses" [value]="status">{{ status }}</option></select><div class="form-text">Status In Use diatur otomatis oleh sistem saat Rental menjadi Active.</div></div>
+                  </ng-container>
+
+                  <ng-container *ngSwitchCase="'room-types'">
+                    <div class="mb-3"><label class="form-label">Nama Tipe Ruangan</label><input class="form-control" name="roomTypeName" [(ngModel)]="form['name']" required maxlength="100" placeholder="Contoh: VIP / Regular"></div>
+                    <div class="mb-3"><label class="form-label">Tarif Tambahan per Jam (Rp)</label><input class="form-control" name="roomTypeRate" type="number" min="0" step="1" [(ngModel)]="form['additionalHourlyRate']" required></div>
+                    <div class="mb-3"><label class="form-label">Deskripsi</label><textarea class="form-control" name="roomTypeDescription" rows="3" maxlength="255" [(ngModel)]="form['description']"></textarea></div>
+                    <div class="form-check mb-3"><input class="form-check-input" id="roomTypeActive" name="roomTypeActive" type="checkbox" [(ngModel)]="form['isActive']"><label class="form-check-label" for="roomTypeActive">Aktif</label></div>
+                  </ng-container>
+
+                  <ng-container *ngSwitchCase="'rooms'">
+                    <div class="mb-3"><label class="form-label">Tipe Ruangan</label><select class="form-select" name="roomTypeId" [(ngModel)]="form['roomTypeId']" required><option [ngValue]="null">Pilih tipe ruangan</option><option *ngFor="let item of roomTypes" [ngValue]="item.id" [disabled]="!item.isActive">{{ item.name }} — {{ item.additionalHourlyRate | currency:'IDR':'symbol':'1.0-0':'id-ID' }}/jam</option></select></div>
+                    <div class="mb-3"><label class="form-label">Nomor Ruangan</label><input class="form-control" name="roomNumber" [(ngModel)]="form['roomNumber']" required maxlength="20" placeholder="Contoh: VIP-01"></div>
+                    <div class="mb-3"><label class="form-label">Deskripsi</label><textarea class="form-control" name="roomDescription" rows="2" maxlength="255" [(ngModel)]="form['description']"></textarea></div>
+                    <div class="mb-3"><label class="form-label">Status Ruangan</label><select class="form-select" name="statusRoom" [(ngModel)]="form['statusRoom']" required><option *ngFor="let status of roomStatuses" [value]="status">{{ status }}</option></select></div>
+                  </ng-container>
+
+                  <ng-container *ngSwitchCase="'stick-types'">
+                    <div class="mb-3"><label class="form-label">Generasi Konsol</label><select class="form-select" name="stickConsoleTypeId" [(ngModel)]="form['consoleTypeId']" required><option [ngValue]="null">Pilih generasi konsol</option><option *ngFor="let item of consoleTypes" [ngValue]="item.id" [disabled]="!item.isActive">{{ item.name }}</option></select></div>
+                    <div class="mb-3"><label class="form-label">Nama Tipe Stik</label><input class="form-control" name="stickTypeName" [(ngModel)]="form['name']" required maxlength="50" placeholder="Contoh: DualShock 5"></div>
+                    <div class="mb-3"><label class="form-label">Tarif Tambahan per Jam (Rp)</label><input class="form-control" name="stickTypeRate" type="number" min="0" step="1" [(ngModel)]="form['additionalHourlyRate']" required></div>
+                    <div class="form-check mb-3"><input class="form-check-input" id="stickTypeActive" name="stickTypeActive" type="checkbox" [(ngModel)]="form['isActive']"><label class="form-check-label" for="stickTypeActive">Aktif</label></div>
+                  </ng-container>
+
+                  <ng-container *ngSwitchCase="'sticks'">
+                    <div class="mb-3"><label class="form-label">Tipe Stik</label><select class="form-select" name="stickTypeId" [(ngModel)]="form['stickTypeId']" required><option [ngValue]="null">Pilih tipe stik</option><option *ngFor="let item of stickTypes" [ngValue]="item.id" [disabled]="!item.isActive">{{ item.name }} — {{ getConsoleTypeName(item.consoleTypeId) }}</option></select></div>
+                    <div class="mb-3"><label class="form-label">Kode Stik</label><input class="form-control" name="stickCode" [(ngModel)]="form['stickCode']" required maxlength="50" placeholder="Contoh: STK-PS5-001"></div>
+                    <div class="mb-3"><label class="form-label">Status Stik</label><select class="form-select" name="statusStick" [(ngModel)]="form['statusStick']" required><option *ngFor="let status of inventoryStatuses" [value]="status">{{ status }}</option></select><div class="form-text">Status In Use diatur otomatis oleh sistem saat Rental menjadi Active.</div></div>
+                  </ng-container>
+                </ng-container>
+
+                <div class="d-flex gap-2 mt-4">
+                  <button class="btn btn-primary flex-grow-1" type="submit" [disabled]="isSaving || inventoryForm.invalid">
+                    {{ isSaving ? 'Menyimpan...' : (editingId === null ? 'Simpan Data' : 'Simpan Perubahan') }}
+                  </button>
+                  <button class="btn btn-outline-secondary" type="button" (click)="resetEditor()" [disabled]="isSaving">Reset</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+  </section>
+</div>

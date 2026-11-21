@@ -3,20 +3,37 @@ import { LoginComponent } from './login/login.component';
 import { RegisterComponent } from './register/register.component';
 import { DashboardComponent } from './admin/dashboard/dashboard.component';
 import { CustomerDashboardComponent } from './customer/customer-dashboard/customer-dashboard.component';
+import { InventoryManagementComponent } from './admin/inventory-management/inventory-management.component';
+import { TransactionsComponent } from './admin/transactions/transactions.component';
 import { authGuard } from './services/auth/auth.guard';
-
-import { ConsoleTypeListComponent } from './inventory/console-type-list/console-type-list.component';
-import { RoomTypeListComponent } from './inventory/room-type-list/room-type-list.component';
-import { RoomListComponent } from './inventory/room-list/room-list.component';
-import { ConsoleUnitListComponent } from './inventory/console-unit-list/console-unit-list.component';
+import { guestGuard } from './services/auth/guest.guard';
 
 export const routes: Routes = [
-  { path: 'login', component: LoginComponent },
-  { path: 'register', component: RegisterComponent },
-
+  {
+    path: 'login',
+    component: LoginComponent,
+    canActivate: [guestGuard]
+  },
+  {
+    path: 'register',
+    component: RegisterComponent,
+    canActivate: [guestGuard]
+  },
   {
     path: 'admin/dashboard',
     component: DashboardComponent,
+    canActivate: [authGuard],
+    data: { role: 'admin' }
+  },
+  {
+    path: 'admin/transactions',
+    component: TransactionsComponent,
+    canActivate: [authGuard],
+    data: { role: 'admin' }
+  },
+  {
+    path: 'admin/inventory',
+    component: InventoryManagementComponent,
     canActivate: [authGuard],
     data: { role: 'admin' }
   },
@@ -27,28 +44,12 @@ export const routes: Routes = [
     data: { role: 'customer' }
   },
   {
-    path: 'admin/inventory/console-types',
-    component: ConsoleTypeListComponent,
-    canActivate: [authGuard],
-    data: { role: 'admin' }
+    path: '',
+    redirectTo: 'login',
+    pathMatch: 'full'
   },
   {
-    path: 'admin/inventory/room-type-list',
-    component: RoomTypeListComponent,
-    canActivate: [authGuard],
-    data: { role: 'admin' }
-  },
-  {
-    path: 'admin/inventory/room-list',
-    component: RoomListComponent,
-    canActivate: [authGuard],
-    data: { role: 'admin' }
-  },
-  {
-    path: 'admin/inventory/console-unit-list',
-    component: ConsoleUnitListComponent,
-    canActivate: [authGuard],
-    data: { role: 'admin' }
-  },
-  { path: '', redirectTo: 'login', pathMatch: 'full' }
+    path: '**',
+    redirectTo: ''
+  }
 ];

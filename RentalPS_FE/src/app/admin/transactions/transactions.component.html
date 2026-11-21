@@ -1,0 +1,187 @@
+<div class="container-fluid py-4 transaction-page">
+  <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+    <div>
+      <a routerLink="/admin/dashboard" class="small text-decoration-none">← Kembali ke Dashboard</a>
+      <h1 class="h3 fw-bold mt-2 mb-1">Manajemen Transaksi</h1>
+      <p class="text-muted mb-0">Kelola seluruh rental dan konfirmasi pembayaran Customer.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a routerLink="/admin/inventory" class="btn btn-outline-primary">Master Data & Inventaris</a>
+      <button class="btn btn-outline-secondary" type="button" (click)="loadData()" [disabled]="isLoading || isSaving">Refresh</button>
+      <button class="btn btn-outline-secondary" type="button" (click)="logout()">Logout</button>
+    </div>
+  </div>
+
+  <div *ngIf="pageError" class="alert alert-danger" role="alert">{{ pageError }}</div>
+  <div *ngIf="successMessage" class="alert alert-success" role="status">{{ successMessage }}</div>
+  <div *ngIf="isSaving" class="alert alert-info py-2" role="status">{{ savingLabel }}</div>
+
+  <div class="row g-3 mb-4" *ngIf="data">
+    <div class="col-6 col-xl-3">
+      <div class="transaction-stat"><span>Total Rental</span><strong>{{ data.rentals.length }}</strong></div>
+    </div>
+    <div class="col-6 col-xl-3">
+      <div class="transaction-stat"><span>Rental Pending</span><strong>{{ countRentalStatus('Pending') }}</strong></div>
+    </div>
+    <div class="col-6 col-xl-3">
+      <div class="transaction-stat"><span>Total Payment</span><strong>{{ data.payments.length }}</strong></div>
+    </div>
+    <div class="col-6 col-xl-3">
+      <div class="transaction-stat"><span>Payment Menunggu</span><strong>{{ countPaymentStatus('Pending') }}</strong></div>
+    </div>
+  </div>
+
+  <section class="card border-0 shadow-sm">
+    <div class="card-header bg-white p-3">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div class="transaction-tabs" role="tablist" aria-label="Jenis transaksi">
+          <button type="button" class="transaction-tab" [class.active]="activeTab === 'rentals'" (click)="selectTab('rentals')">Daftar Rental</button>
+          <button type="button" class="transaction-tab" [class.active]="activeTab === 'payments'" (click)="selectTab('payments')">Daftar Payment</button>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+          <input class="form-control form-control-sm search-input" type="search"
+            [placeholder]="activeTab === 'rentals' ? 'Cari kode rental / Customer ID' : 'Cari kode payment / rental'"
+            [value]="searchTerm" (input)="searchTerm = $any($event.target).value">
+          <select class="form-select form-select-sm status-select" [value]="statusFilter"
+            (change)="statusFilter = $any($event.target).value">
+            <option value="all">Semua status</option>
+            <ng-container *ngIf="activeTab === 'rentals'">
+              <option value="Pending">Pending</option><option value="Active">Active</option>
+              <option value="Completed">Completed</option><option value="Cancelled">Cancelled</option>
+            </ng-container>
+            <ng-container *ngIf="activeTab === 'payments'">
+              <option value="Pending">Pending</option><option value="Success">Success</option><option value="Failed">Failed</option>
+            </ng-container>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-body p-0">
+      <div *ngIf="isLoading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Memuat transaksi...</span></div>
+      </div>
+
+      <ng-container *ngIf="!isLoading && data">
+        <div *ngIf="activeTab === 'rentals'" class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light"><tr>
+              <th class="ps-3">Kode Rental</th><th>Customer</th><th>Unit Konsol</th>
+              <th>Waktu Sewa</th><th>Durasi</th><th>Total</th><th>Status</th><th class="text-end pe-3">Aksi</th>
+            </tr></thead>
+            <tbody>
+              <tr *ngFor="let rental of filteredRentals">
+                <td class="ps-3 fw-semibold">{{ rental.rentalCode }}</td>
+                <td>Customer #{{ rental.userId }}</td>
+                <td>{{ getConsoleUnitLabel(rental.consoleUnitId) }}</td>
+                <td><div>{{ rental.startTime | date:'dd MMM yyyy, HH:mm' }}</div><small class="text-muted">s/d {{ rental.endTime | date:'dd MMM yyyy, HH:mm' }}</small></td>
+                <td>{{ rental.durationHour | number:'1.0-2' }} jam</td>
+                <td class="fw-semibold">{{ formatCurrency(rental.totalAmount) }}</td>
+                <td><span class="badge" [ngClass]="rentalStatusClass(rental.statusRental)">{{ getRentalStatusLabel(rental.statusRental) }}</span></td>
+                <td class="text-end pe-3">
+                  <div class="d-flex flex-wrap justify-content-end gap-1">
+                    <ng-container [ngSwitch]="getRentalStatusLabel(rental.statusRental)">
+                      <ng-container *ngSwitchCase="'Pending'">
+                        <button class="btn btn-sm btn-success" type="button"
+                          (click)="updateRentalStatus(rental, 'Active')" [disabled]="isSaving"
+                          title="Konfirmasi Customer benar-benar menyewa">Active</button>
+                        <button class="btn btn-sm btn-outline-danger" type="button"
+                          (click)="updateRentalStatus(rental, 'Cancelled')" [disabled]="isSaving"
+                          title="Batalkan Rental Pending">Cancel</button>
+                      </ng-container>
+                      <button *ngSwitchCase="'Active'" class="btn btn-sm btn-primary" type="button"
+                        (click)="updateRentalStatus(rental, 'Completed')" [disabled]="isSaving">Completed</button>
+                    </ng-container>
+                    <button class="btn btn-sm btn-outline-primary" type="button"
+                      (click)="showRentalDetail(rental)">{{ selectedRentalId === rental.id ? 'Tutup Detail' : 'Detail' }}</button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="filteredRentals.length === 0"><td colspan="8" class="text-center text-muted py-5">Tidak ada data rental yang sesuai.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div *ngIf="activeTab === 'payments'" class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light"><tr>
+              <th class="ps-3">Kode Payment</th><th>Kode Rental</th><th>Customer</th>
+              <th>Metode</th><th>Nominal</th><th>Status</th><th>Waktu Konfirmasi</th><th class="text-end pe-3">Aksi</th>
+            </tr></thead>
+            <tbody>
+              <tr *ngFor="let payment of filteredPayments">
+                <td class="ps-3 fw-semibold">{{ payment.paymentCode }}</td>
+                <td><button class="btn btn-link btn-sm p-0" (click)="openRentalFromPayment(payment)">{{ findRental(payment.rentalId)?.rentalCode || ('Rental #' + payment.rentalId) }}</button></td>
+                <td>{{ findRental(payment.rentalId) ? 'Customer #' + findRental(payment.rentalId)?.userId : '—' }}</td>
+                <td>{{ getPaymentMethodLabel(payment.paymentMethod) }}</td>
+                <td class="fw-semibold">{{ formatCurrency(payment.amount) }}</td>
+                <td><span class="badge" [ngClass]="paymentStatusClass(payment.paymentStatus)">{{ getPaymentStatusLabel(payment.paymentStatus) }}</span></td>
+                <td>{{ payment.paidAt ? (payment.paidAt | date:'dd MMM yyyy, HH:mm') : '—' }}</td>
+                <td class="text-end pe-3 text-nowrap">
+                  <ng-container *ngIf="getPaymentStatusLabel(payment.paymentStatus) === 'Pending'; else paymentFinal">
+                    <button class="btn btn-sm btn-success me-1" type="button" (click)="updatePaymentStatus(payment, 'Success')" [disabled]="isSaving">Success</button>
+                    <button class="btn btn-sm btn-outline-danger" type="button" (click)="updatePaymentStatus(payment, 'Failed')" [disabled]="isSaving">Failed</button>
+                  </ng-container>
+                  <ng-template #paymentFinal><span class="text-muted small">Sudah diproses</span></ng-template>
+                </td>
+              </tr>
+              <tr *ngIf="filteredPayments.length === 0"><td colspan="8" class="text-center text-muted py-5">Tidak ada data payment yang sesuai.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </ng-container>
+    </div>
+  </section>
+
+  <section *ngIf="selectedRental as rental" class="card border-0 shadow-sm mt-4 rental-detail">
+    <div class="card-header bg-white p-3 d-flex justify-content-between align-items-center gap-2">
+      <div><h2 class="h5 fw-bold mb-1">Detail Rental {{ rental.rentalCode }}</h2><p class="small text-muted mb-0">Customer #{{ rental.userId }} · Rental #{{ rental.id }}</p></div>
+      <span class="badge" [ngClass]="rentalStatusClass(rental.statusRental)">{{ getRentalStatusLabel(rental.statusRental) }}</span>
+    </div>
+    <div class="card-body">
+      <div class="row g-3 mb-3">
+        <div class="col-6 col-lg-3"><div class="detail-label">Unit Konsol</div><div class="fw-semibold">{{ getConsoleUnitLabel(rental.consoleUnitId) }}</div></div>
+        <div class="col-6 col-lg-3"><div class="detail-label">Mulai</div><div>{{ rental.startTime | date:'dd MMM yyyy, HH:mm' }}</div></div>
+        <div class="col-6 col-lg-3"><div class="detail-label">Selesai</div><div>{{ rental.endTime | date:'dd MMM yyyy, HH:mm' }}</div></div>
+        <div class="col-6 col-lg-3"><div class="detail-label">Durasi / Total</div><div class="fw-semibold">{{ rental.durationHour | number:'1.0-2' }} jam · {{ formatCurrency(rental.totalAmount) }}</div></div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-12 col-lg-4">
+          <div class="detail-panel h-100"><h3 class="h6 fw-bold">Ruangan</h3>
+            <div *ngIf="selectedRentalRooms.length; else noRoom">
+              <div *ngFor="let item of selectedRentalRooms" class="d-flex justify-content-between gap-2 py-1"><span>{{ item.name || getRoomLabel(item.roomId) }}</span><strong>{{ formatCurrency(item.subTotal) }}</strong></div>
+            </div><ng-template #noRoom><span class="text-muted small">Belum ada detail ruangan.</span></ng-template>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="detail-panel h-100"><h3 class="h6 fw-bold">Stik Tambahan</h3>
+            <div *ngIf="selectedRentalSticks.length; else noStick">
+              <div *ngFor="let item of selectedRentalSticks" class="d-flex justify-content-between gap-2 py-1"><span>{{ getStickLabel(item.stickId) }}</span><strong>{{ formatCurrency(item.subTotal) }}</strong></div>
+            </div><ng-template #noStick><span class="text-muted small">Tidak ada stik tambahan.</span></ng-template>
+          </div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <div class="detail-panel h-100"><h3 class="h6 fw-bold">Pembayaran</h3>
+            <div *ngIf="selectedRentalPayments.length; else noPayment">
+              <div *ngFor="let item of selectedRentalPayments" class="d-flex justify-content-between align-items-start gap-2 py-1"><div><div class="small fw-semibold">{{ item.paymentCode }}</div><span class="badge" [ngClass]="paymentStatusClass(item.paymentStatus)">{{ getPaymentStatusLabel(item.paymentStatus) }}</span></div><strong>{{ formatCurrency(item.amount) }}</strong></div>
+            </div><ng-template #noPayment><span class="text-muted small">Belum ada pembayaran.</span></ng-template>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex flex-wrap align-items-center gap-2 mt-4 pt-3 border-top">
+        <strong class="me-2">Aksi Status Rental:</strong>
+        <ng-container [ngSwitch]="getRentalStatusLabel(rental.statusRental)">
+          <ng-container *ngSwitchCase="'Pending'">
+            <button class="btn btn-sm btn-success" type="button" (click)="updateRentalStatus(rental, 'Active')" [disabled]="isSaving">Konfirmasi Rental (Active)</button>
+            <button class="btn btn-sm btn-outline-danger" type="button" (click)="updateRentalStatus(rental, 'Cancelled')" [disabled]="isSaving">Batalkan Rental</button>
+          </ng-container>
+          <button *ngSwitchCase="'Active'" class="btn btn-sm btn-primary" type="button" (click)="updateRentalStatus(rental, 'Completed')" [disabled]="isSaving">Selesaikan Rental</button>
+          <span *ngSwitchDefault class="text-muted small">Status rental sudah final.</span>
+        </ng-container>
+        <span class="text-muted small ms-lg-auto">Konfirmasi pembayaran dilakukan pada tab Daftar Payment.</span>
+      </div>
+    </div>
+  </section>
+</div>

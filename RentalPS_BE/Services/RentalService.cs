@@ -123,7 +123,7 @@ namespace RentalPS_BE.Services
             if (payments.Any(p => p.RentalId == rental.Id))
             {
                 throw new ArgumentException(
-                    "Rental tidak dapat diubah karena sudah memiliki catatan pembayaran. Batalkan atau proses penyesuaian pembayaran terlebih dahulu.");
+                    "Rental tidak dapat dibatalkan karena pembayaran sudah berhasil. Saat ini fitur refund belum tersedia. Silakan hubungi Admin untuk bantuan.");
             }
 
             var (_, consoleUnit, consoleType, startTimeUtc, endTimeUtc, durationHour) =
@@ -185,7 +185,7 @@ namespace RentalPS_BE.Services
             if (payments.Any(p => p.RentalId == rental.Id && p.PaymentStatus == PaymentStatus.Success))
             {
                 throw new ArgumentException(
-                    "Rental memiliki pembayaran berhasil. Proses pengembalian dana terlebih dahulu sebelum membatalkan transaksi.");
+                     "Rental tidak dapat dibatalkan karena sudah memiliki pembayaran Success. Saat ini sistem belum menyediakan fitur refund. Silakan hubungi Admin untuk proses pengembalian dana secara manual.");
             }
 
             // Rental tidak dihapus secara fisik agar histori transaksi tetap tersimpan.
@@ -322,7 +322,7 @@ namespace RentalPS_BE.Services
                     if (hasSuccessfulPayment)
                     {
                         throw new ArgumentException(
-                            "Rental tidak dapat dibatalkan karena sudah memiliki pembayaran Success. Selesaikan proses pengembalian dana terlebih dahulu.");
+                            "Rental tidak dapat dibatalkan karena pembayaran sudah berhasil. Saat ini sistem belum menyediakan fitur refund. Silakan hubungi Admin untuk bantuan pengembalian dana.");
                     }
                     break;
 
