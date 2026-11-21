@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { AdminLayoutComponent } from './admin/admin-layout/admin-layout.component';
 import { LoginComponent } from './login/login.component';
 import { RegisterComponent } from './register/register.component';
 import { DashboardComponent } from './admin/dashboard/dashboard.component';
@@ -20,23 +21,30 @@ export const routes: Routes = [
     canActivate: [guestGuard]
   },
   {
-    path: 'admin/dashboard',
-    component: DashboardComponent,
-    canActivate: [authGuard],
-    data: { role: 'admin' }
-  },
-  {
-    path: 'admin/transactions',
-    component: TransactionsComponent,
-    canActivate: [authGuard],
-    data: { role: 'admin' }
-  },
-  {
-    path: 'admin/inventory',
-    component: InventoryManagementComponent,
-    canActivate: [authGuard],
-    data: { role: 'admin' }
-  },
+  path: 'admin',
+  component: AdminLayoutComponent,
+  canActivate: [authGuard],
+  data: { role: 'admin' },
+  children: [
+    {
+      path: 'dashboard',
+      component: DashboardComponent
+    },
+    {
+      path: 'transactions',
+      component: TransactionsComponent
+    },
+    {
+      path: 'inventory',
+      component: InventoryManagementComponent
+    },
+    {
+      path: '',
+      redirectTo: 'dashboard',
+      pathMatch: 'full'
+    }
+  ]
+},
   {
     path: 'customer/dashboard',
     component: CustomerDashboardComponent,

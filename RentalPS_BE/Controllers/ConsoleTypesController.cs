@@ -11,7 +11,8 @@ namespace RentalPS_BE.Controllers
     {
         private readonly IConsoleTypeService _consoleTypeService;
 
-        public ConsoleTypesController(IConsoleTypeService consoleTypeService)
+        public ConsoleTypesController(
+            IConsoleTypeService consoleTypeService)
         {
             _consoleTypeService = consoleTypeService;
         }
@@ -19,14 +20,17 @@ namespace RentalPS_BE.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var consoleTypes = await _consoleTypeService.GetAllAsync();
+            var consoleTypes =
+                await _consoleTypeService.GetAllAsync();
+
             return Ok(consoleTypes);
         }
 
-        [HttpGet("{id:int:min(1)}")]
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var consoleType = await _consoleTypeService.GetByIdAsync(id);
+            var consoleType =
+                await _consoleTypeService.GetByIdAsync(id);
 
             if (consoleType == null)
             {
@@ -36,19 +40,13 @@ namespace RentalPS_BE.Controllers
             return Ok(consoleType);
         }
 
-        [Authorize(Roles = "Admin")]
         [HttpPost]
-        public async Task<IActionResult> Create(ConsoleTypeRequest request)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Create(
+            ConsoleTypeRequest request)
         {
-            if (await _consoleTypeService.NameExistsAsync(request.Name))
-            {
-                return Conflict(new
-                {
-                    message = "Nama console type sudah digunakan."
-                });
-            }
-
-            var created = await _consoleTypeService.CreateAsync(request);
+            var created =
+                await _consoleTypeService.CreateAsync(request);
 
             return CreatedAtAction(
                 nameof(GetById),
@@ -56,28 +54,16 @@ namespace RentalPS_BE.Controllers
                 created);
         }
 
+        [HttpPut("{id:int}")]
         [Authorize(Roles = "Admin")]
-        [HttpPut("{id:int:min(1)}")]
-        public async Task<IActionResult> Update(int id, ConsoleTypeRequest request)
+        public async Task<IActionResult> Update(
+            int id,
+            ConsoleTypeRequest request)
         {
-            var existing = await _consoleTypeService.GetByIdAsync(id);
+            var updated =
+                await _consoleTypeService.UpdateAsync(id, request);
 
-            if (existing is null)
-            {
-                return NotFound();
-            }
-
-            if (await _consoleTypeService.NameExistsAsync(request.Name, id))
-            {
-                return Conflict(new
-                {
-                    message = "Nama console type sudah digunakan."
-                });
-            }
-
-            var updated = await _consoleTypeService.UpdateAsync(id, request);
-
-            if (updated is null)
+            if (updated == null)
             {
                 return NotFound();
             }
@@ -85,8 +71,8 @@ namespace RentalPS_BE.Controllers
             return Ok(updated);
         }
 
-        [Authorize(Roles = "Admin")]
         [HttpDelete("{id:int:min(1)}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
             var deleted = await _consoleTypeService.DeleteAsync(id);
