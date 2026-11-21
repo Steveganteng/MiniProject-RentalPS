@@ -8,7 +8,7 @@ namespace RentalPS_BE.DTOs
         [Range(1, int.MaxValue)]
         public int RentalId { get; set; }
 
-        [Range(typeof(decimal), "0.01", "999999999999.99")]
+        [Range(typeof(decimal), "0.01", "999999999999.99", ParseLimitsInInvariantCulture = true)]
         public decimal Amount { get; set; }
 
         [EnumDataType(typeof(PaymentMethod))]

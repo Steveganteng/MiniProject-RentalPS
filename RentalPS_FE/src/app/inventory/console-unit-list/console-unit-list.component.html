@@ -1,0 +1,31 @@
+<h2>Unit PlayStation Tersedia</h2>
+
+<p *ngIf="isLoading">Memuat data...</p>
+<p *ngIf="errorMessage">{{ errorMessage }}</p>
+
+<table
+  *ngIf="!isLoading && !errorMessage"
+  class="table table-striped"
+>
+  <thead>
+    <tr>
+      <th>Kode Unit</th>
+      <th>ID Tipe PS</th>
+      <th>ID Ruangan</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <tr *ngFor="let item of availableUnits">
+      <td>{{ item.unitCode }}</td>
+      <td>{{ item.consoleTypeId }}</td>
+      <td>{{ item.roomId ?? 'Belum ditempatkan' }}</td>
+      <td>Tersedia</td>
+    </tr>
+
+    <tr *ngIf="availableUnits.length === 0">
+      <td colspan="4">Belum ada unit PlayStation yang tersedia.</td>
+    </tr>
+  </tbody>
+</table>

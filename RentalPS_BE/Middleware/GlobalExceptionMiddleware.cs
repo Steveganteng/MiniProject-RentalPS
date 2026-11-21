@@ -1,106 +1,38 @@
-using RentalPS_BE.Exceptions;
+using System.Net;
 
-namespace RentalPS_BE.Middlewares;
-
-public sealed class GlobalExceptionMiddleware
+namespace RentalPS_BE.Middlewares
 {
-    private readonly RequestDelegate _next;
-    private readonly ILogger<GlobalExceptionMiddleware> _logger;
-
-    public GlobalExceptionMiddleware(
-        RequestDelegate next,
-        ILogger<GlobalExceptionMiddleware> logger)
+    public class GlobalExceptionMiddleware
     {
-        _next = next;
-        _logger = logger;
-    }
+        private readonly RequestDelegate _next;
+        private readonly ILogger<GlobalExceptionMiddleware> _logger;
 
-    public async Task InvokeAsync(HttpContext context)
-    {
-        try
+        public GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExceptionMiddleware> logger)
         {
-            await _next(context);
+            _next = next;
+            _logger = logger;
         }
-        catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+
+        public async Task InvokeAsync(HttpContext ctx)
         {
-            _logger.LogInformation(
-                "Request {Method} {Path} was cancelled by the client.",
-                context.Request.Method,
-                context.Request.Path);
-        }
-        catch (Exception exception)
-        {
-            if (context.Response.HasStarted)
+            try
             {
-                _logger.LogError(
-                    exception,
-                    "An exception occurred after the response started for {Method} {Path}.",
-                    context.Request.Method,
-                    context.Request.Path);
-
-                throw;
+                await _next(ctx);
             }
-
-            var (statusCode, message) = MapException(exception);
-
-            if (statusCode >= StatusCodes.Status500InternalServerError)
+            catch (Exception ex)
             {
-                _logger.LogError(
-                    exception,
-                    "Unhandled exception for {Method} {Path}. TraceId: {TraceId}",
-                    context.Request.Method,
-                    context.Request.Path,
-                    context.TraceIdentifier);
-            }
-            else
-            {
-                _logger.LogWarning(
-                    "Request {Method} {Path} rejected with HTTP {StatusCode}: {Message}. TraceId: {TraceId}",
-                    context.Request.Method,
-                    context.Request.Path,
-                    statusCode,
-                    message,
-                    context.TraceIdentifier);
-            }
+                _logger.LogError(ex, "Unhandled exception occurred");
 
-            context.Response.Clear();
-            context.Response.StatusCode = statusCode;
-            context.Response.ContentType = "application/json; charset=utf-8";
+                ctx.Response.ContentType = "application/json";
+                ctx.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
 
-            await context.Response.WriteAsJsonAsync(
-                new
+                await ctx.Response.WriteAsJsonAsync(new
                 {
                     status = "error",
-                    message,
-                    timestamp = DateTime.UtcNow,
-                    traceId = context.TraceIdentifier
-                },
-                cancellationToken: context.RequestAborted);
+                    message = "Terjadi kesalahan pada server.",
+                    timestamp = DateTime.UtcNow
+                });
+            }
         }
-    }
-
-    private static (int StatusCode, string Message) MapException(Exception exception)
-    {
-        return exception switch
-        {
-            NotFoundException =>
-                (StatusCodes.Status404NotFound, exception.Message),
-
-            InvalidPaymentAmountException =>
-                (StatusCodes.Status400BadRequest, exception.Message),
-
-            InvalidRentalDurationException =>
-                (StatusCodes.Status400BadRequest, exception.Message),
-
-            ArgumentException =>
-                (StatusCodes.Status400BadRequest, exception.Message),
-
-            InventoryNotAvailableException =>
-                (StatusCodes.Status409Conflict, exception.Message),
-
-            _ =>
-                (StatusCodes.Status500InternalServerError,
-                 "Terjadi kesalahan internal pada server. Silakan coba kembali atau hubungi administrator.")
-        };
     }
 }

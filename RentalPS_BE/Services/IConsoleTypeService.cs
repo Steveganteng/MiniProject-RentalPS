@@ -8,6 +8,6 @@ namespace RentalPS_BE.Services
         Task<ConsoleTypeResponse?> GetByIdAsync(int id);
         Task<ConsoleTypeResponse> CreateAsync(ConsoleTypeRequest request);
         Task<ConsoleTypeResponse?> UpdateAsync(int id, ConsoleTypeRequest request);
-        Task<bool> DeactivateAsync(int id);
+        Task<bool> DeleteAsync(int id);
     }
 }

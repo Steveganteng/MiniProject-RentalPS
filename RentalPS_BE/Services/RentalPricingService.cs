@@ -14,7 +14,7 @@ namespace RentalPS_BE.Services
 
         private const decimal DiscountThreeToFourHours = 0.10m;
         private const decimal DiscountFiveToSevenHours = 0.15m;
-        private const decimal DiscountMoreThanEightHours = 0.20m;
+        private const decimal DiscountEightHoursOrMore = 0.20m;
 
         public RentalPricingService(ILogger<RentalPricingService> logger)
         {
@@ -131,9 +131,9 @@ namespace RentalPS_BE.Services
             // Aturan tim menyebut "lebih dari 8 jam". Karena itu tepat 8 jam
             // belum mendapat tier 20%; kasus 8 jam perlu dikonfirmasi tim bila ingin
             // dimasukkan ke tier tertentu.
-            if (rental.DurationHour > 8m)
+            if (rental.DurationHour >= 8m)
             {
-                return DiscountMoreThanEightHours;
+                return DiscountEightHoursOrMore;
             }
 
             return 0m;

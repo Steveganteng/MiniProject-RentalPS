@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, OnDestroy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { concatMap, finalize, from, of, switchMap, toArray } from 'rxjs';
@@ -25,7 +25,7 @@ import {
   templateUrl: './customer-dashboard.component.html',
   styleUrl: './customer-dashboard.component.css'
 })
-export class CustomerDashboardComponent implements OnInit {
+export class CustomerDashboardComponent implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly rentalService = inject(RentalService);
   private readonly authService = inject(AuthService);
@@ -57,6 +57,10 @@ export class CustomerDashboardComponent implements OnInit {
   isSubmitting = false;
   errorMessage = '';
   successMessage = '';
+  reminderMessage = '';
+
+  private reminderIntervalId: number | undefined;
+  private shownReminderKeys = new Set<string>();
 
   bookingForm = this.fb.nonNullable.group({
     consoleUnitId: [0, [Validators.required, Validators.min(1)]],
@@ -71,6 +75,9 @@ export class CustomerDashboardComponent implements OnInit {
   ngOnInit(): void {
     this.extractUserFromToken();
     this.loadAllData();
+    this.reminderIntervalId = window.setInterval(() => {
+    this.checkBookingReminders();
+    }, 30000);
   }
 
   get minStartTime(): string {
@@ -123,6 +130,7 @@ export class CustomerDashboardComponent implements OnInit {
           this.stickTypes = res.stickTypes ?? [];
           this.sticks = res.sticks ?? [];
           this.rentalHistory = res.rentals ?? [];
+          this.checkBookingReminders();
           this.rentalRooms = res.rentalRooms ?? [];
           this.rentalSticks = res.rentalSticks ?? [];
           this.payments = res.payments ?? [];
@@ -337,7 +345,7 @@ export class CustomerDashboardComponent implements OnInit {
   get durationDiscountPercent(): number {
     if (this.duration >= 3 && this.duration <= 4) return 10;
     if (this.duration >= 5 && this.duration <= 7) return 15;
-    if (this.duration > 8) return 20;
+    if (this.duration >= 8) return 20;
     return 0;
   }
 
@@ -608,8 +616,65 @@ export class CustomerDashboardComponent implements OnInit {
       });
   }
 
+  private checkBookingReminders(): void {
+  if (this.reminderMessage) {
+    return;
+  }
+
+  const now = Date.now();
+
+  for (const rental of this.rentalHistory) {
+    const status = String(rental.statusRental).toLowerCase();
+
+    if (!['pending', 'active'].includes(status)) {
+      continue;
+    }
+
+    if (!rental.startTime || !rental.endTime) {
+      continue;
+    }
+
+    const reminders = [
+      {
+        key: 'start',
+        eventTime: new Date(rental.startTime).getTime(),
+        message: `Booking ${rental.rentalCode} dimulai 5 menit lagi.`
+      },
+      {
+        key: 'end',
+        eventTime: new Date(rental.endTime).getTime(),
+        message: `Booking ${rental.rentalCode} berakhir 5 menit lagi.`
+      }
+    ];
+
+    for (const reminder of reminders) {
+      const reminderKey = `${rental.id}-${reminder.key}`;
+      const reminderTime = reminder.eventTime - 5 * 60 * 1000;
+
+      if (
+        Number.isNaN(reminder.eventTime) ||
+        now < reminderTime ||
+        now >= reminder.eventTime ||
+        this.shownReminderKeys.has(reminderKey)
+      ) {
+        continue;
+      }
+
+      this.shownReminderKeys.add(reminderKey);
+      this.reminderMessage = reminder.message;
+      return;
+    }
+  }
+}
+
   logout(): void {
     this.authService.logout();
     void this.router.navigate(['/login']);
   }
+
+  ngOnDestroy(): void {
+  if (this.reminderIntervalId !== undefined) {
+    window.clearInterval(this.reminderIntervalId);
+  }
+}
 }

@@ -7,7 +7,7 @@ import { AuthService } from '../../services/auth/auth.service';
 import {
   AdminRental,
   DashboardService
-} from '../../services/dashboard.service';
+} from '../../services/dashboard/dashboard.service';
 
 interface SummaryCard {
   title: string;

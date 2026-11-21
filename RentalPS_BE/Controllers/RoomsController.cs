@@ -20,10 +20,11 @@ namespace RentalPS_BE.Controllers
         public async Task<IActionResult> GetAll()
         {
             var rooms = await _roomService.GetAllAsync();
+
             return Ok(rooms);
         }
 
-        [HttpGet("{id:int:min(1)}")]
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id)
         {
             var room = await _roomService.GetByIdAsync(id);
@@ -40,21 +41,20 @@ namespace RentalPS_BE.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create(RoomRequest request)
         {
-
             var created = await _roomService.CreateAsync(request);
 
             return CreatedAtAction(
                 nameof(GetById),
                 new { id = created.Id },
                 created);
-
         }
 
-        [HttpPut("{id:int:min(1)}")]
+        [HttpPut("{id:int}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Update(int id, RoomRequest request)
+        public async Task<IActionResult> Update(
+            int id,
+            RoomRequest request)
         {
-
             var updated = await _roomService.UpdateAsync(id, request);
 
             if (updated == null)
@@ -63,16 +63,15 @@ namespace RentalPS_BE.Controllers
             }
 
             return Ok(updated);
-
         }
 
-        [HttpDelete("{id:int:min(1)}")]
+        [HttpDelete("{id:int}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
-            var deactivated = await _roomService.DeactivateAsync(id);
+            var deleted = await _roomService.DeleteAsync(id);
 
-            if (!deactivated)
+            if (!deleted)
             {
                 return NotFound();
             }

@@ -86,3 +86,118 @@
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+.inventory-page {
+  max-width: 1600px;
+  margin-inline: auto;
+  padding-inline: clamp(16px, 2vw, 32px);
+}
+
+.inventory-page h1 {
+  letter-spacing: -0.03em;
+}
+
+.inventory-stat {
+  position: relative;
+  min-height: 112px;
+  overflow: hidden;
+  padding: 18px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius);
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.inventory-stat::after {
+  position: absolute;
+  top: -26px;
+  right: -22px;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: rgba(79, 70, 229, 0.08);
+  content: "";
+}
+
+.inventory-stat:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 32px rgba(23, 32, 51, 0.12);
+}
+
+.inventory-stat span {
+  color: var(--app-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.inventory-stat strong {
+  color: var(--app-primary);
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.inventory-page .card {
+  border: 1px solid var(--app-border) !important;
+}
+
+.inventory-page .card-header {
+  border-bottom: 1px solid var(--app-border);
+}
+
+.inventory-tabs {
+  gap: 8px;
+  padding-bottom: 4px;
+}
+
+.inventory-tab {
+  padding: 9px 15px;
+  border-color: var(--app-border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--app-muted);
+  font-weight: 600;
+}
+
+.inventory-tab:hover {
+  border-color: var(--app-primary);
+  color: var(--app-primary);
+}
+
+.inventory-tab.active {
+  border-color: var(--app-primary);
+  background: var(--app-primary);
+  color: #fff;
+  box-shadow: 0 5px 12px rgba(79, 70, 229, 0.2);
+}
+
+.inventory-page .table-responsive {
+  overflow: hidden;
+  border-color: var(--app-border) !important;
+  border-radius: 12px;
+}
+
+.inventory-page .table tbody tr {
+  transition: background-color 140ms ease;
+}
+
+.inventory-page .table tbody tr:hover {
+  --bs-table-bg: #f7f8ff;
+}
+
+.form-panel {
+  border-color: var(--app-border) !important;
+  border-radius: var(--app-radius) !important;
+  background: #fff;
+  box-shadow: var(--app-shadow);
+}
+
+.form-panel .form-label {
+  color: var(--app-text);
+  font-weight: 600;
+}
+
+.inventory-page .badge {
+  border-radius: 999px;
+  padding: 6px 9px;
+}

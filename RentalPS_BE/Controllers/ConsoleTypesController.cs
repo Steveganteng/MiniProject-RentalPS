@@ -11,7 +11,8 @@ namespace RentalPS_BE.Controllers
     {
         private readonly IConsoleTypeService _consoleTypeService;
 
-        public ConsoleTypesController(IConsoleTypeService consoleTypeService)
+        public ConsoleTypesController(
+            IConsoleTypeService consoleTypeService)
         {
             _consoleTypeService = consoleTypeService;
         }
@@ -19,14 +20,17 @@ namespace RentalPS_BE.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var consoleTypes = await _consoleTypeService.GetAllAsync();
+            var consoleTypes =
+                await _consoleTypeService.GetAllAsync();
+
             return Ok(consoleTypes);
         }
 
-        [HttpGet("{id:int:min(1)}")]
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var consoleType = await _consoleTypeService.GetByIdAsync(id);
+            var consoleType =
+                await _consoleTypeService.GetByIdAsync(id);
 
             if (consoleType == null)
             {
@@ -38,9 +42,11 @@ namespace RentalPS_BE.Controllers
 
         [HttpPost]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Create(ConsoleTypeRequest request)
+        public async Task<IActionResult> Create(
+            ConsoleTypeRequest request)
         {
-            var created = await _consoleTypeService.CreateAsync(request);
+            var created =
+                await _consoleTypeService.CreateAsync(request);
 
             return CreatedAtAction(
                 nameof(GetById),
@@ -48,11 +54,14 @@ namespace RentalPS_BE.Controllers
                 created);
         }
 
-        [HttpPut("{id:int:min(1)}")]
+        [HttpPut("{id:int}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Update(int id, ConsoleTypeRequest request)
+        public async Task<IActionResult> Update(
+            int id,
+            ConsoleTypeRequest request)
         {
-            var updated = await _consoleTypeService.UpdateAsync(id, request);
+            var updated =
+                await _consoleTypeService.UpdateAsync(id, request);
 
             if (updated == null)
             {
@@ -66,9 +75,9 @@ namespace RentalPS_BE.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
-            var deactivated = await _consoleTypeService.DeactivateAsync(id);
+            var deleted = await _consoleTypeService.DeleteAsync(id);
 
-            if (!deactivated)
+            if (!deleted)
             {
                 return NotFound();
             }

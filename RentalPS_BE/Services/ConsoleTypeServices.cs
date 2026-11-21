@@ -1,24 +1,23 @@
 using RentalPS_BE.DTOs;
 using RentalPS_BE.Repositories;
 using RentalPSMiniProject.Models;
-using Microsoft.Extensions.Logging;
 
 namespace RentalPS_BE.Services
 {
     public class ConsoleTypeService : IConsoleTypeService
     {
-        private readonly ILogger<ConsoleTypeService> _logger;
-        private readonly IRepository<ConsoleType> _repository;
+        private readonly IRepository<ConsoleType> _consoleTypeRepository;
 
-        public ConsoleTypeService(IRepository<ConsoleType> repository, ILogger<ConsoleTypeService> logger)
+        public ConsoleTypeService(
+            IRepository<ConsoleType> consoleTypeRepository)
         {
-            _repository = repository;
-            _logger = logger;
+            _consoleTypeRepository = consoleTypeRepository;
         }
 
         public async Task<List<ConsoleTypeResponse>> GetAllAsync()
         {
-            var consoleTypes = await _repository.GetAllAsync();
+            var consoleTypes =
+                await _consoleTypeRepository.GetAllAsync();
 
             return consoleTypes
                 .Select(ToResponse)
@@ -27,25 +26,29 @@ namespace RentalPS_BE.Services
 
         public async Task<ConsoleTypeResponse?> GetByIdAsync(int id)
         {
-            var consoleType = await _repository.GetByIdAsync(id);
+            var consoleType =
+                await _consoleTypeRepository.GetByIdAsync(id);
 
-            return consoleType == null
-                ? null
-                : ToResponse(consoleType);
+            if (consoleType == null)
+            {
+                return null;
+            }
+
+            return ToResponse(consoleType);
         }
 
-        public async Task<ConsoleTypeResponse> CreateAsync(ConsoleTypeRequest request)
+        public async Task<ConsoleTypeResponse> CreateAsync(
+            ConsoleTypeRequest request)
         {
             var consoleType = new ConsoleType
             {
-                Name = request.Name.Trim(),
+                Name = request.Name,
                 HourlyRate = request.HourlyRate,
                 IsActive = request.IsActive
             };
 
-            await _repository.AddAsync(consoleType);
-            await _repository.SaveChangesAsync();
-            _logger.LogInformation("Console type {ConsoleTypeId} ({Name}) created. HourlyRate: {HourlyRate}.", consoleType.Id, consoleType.Name, consoleType.HourlyRate);
+            await _consoleTypeRepository.AddAsync(consoleType);
+            await _consoleTypeRepository.SaveChangesAsync();
 
             return ToResponse(consoleType);
         }
@@ -54,41 +57,45 @@ namespace RentalPS_BE.Services
             int id,
             ConsoleTypeRequest request)
         {
-            var consoleType = await _repository.GetByIdAsync(id);
+            var consoleType =
+                await _consoleTypeRepository.GetByIdAsync(id);
 
             if (consoleType == null)
             {
                 return null;
             }
 
-            consoleType.Name = request.Name.Trim();
+            consoleType.Name = request.Name;
             consoleType.HourlyRate = request.HourlyRate;
             consoleType.IsActive = request.IsActive;
 
-            _repository.Update(consoleType);
-            await _repository.SaveChangesAsync();
-            _logger.LogInformation("Console type {ConsoleTypeId} ({Name}) updated.", consoleType.Id, consoleType.Name);
+            _consoleTypeRepository.Update(consoleType);
+            await _consoleTypeRepository.SaveChangesAsync();
 
             return ToResponse(consoleType);
         }
 
-        public async Task<bool> DeactivateAsync(int id)
+        public async Task<bool> DeleteAsync(int id)
         {
-            var consoleType = await _repository.GetByIdAsync(id);
+            var consoleType =
+                await _consoleTypeRepository.GetByIdAsync(id);
 
             if (consoleType == null)
             {
                 return false;
             }
 
+            // Soft delete karena ConsoleType memiliki field IsActive.
             consoleType.IsActive = false;
-            await _repository.SaveChangesAsync();
-            _logger.LogInformation("Console type {ConsoleTypeId} ({Name}) deactivated.", consoleType.Id, consoleType.Name);
+
+            _consoleTypeRepository.Update(consoleType);
+            await _consoleTypeRepository.SaveChangesAsync();
 
             return true;
         }
 
-        private static ConsoleTypeResponse ToResponse(ConsoleType consoleType)
+        private static ConsoleTypeResponse ToResponse(
+            ConsoleType consoleType)
         {
             return new ConsoleTypeResponse
             {

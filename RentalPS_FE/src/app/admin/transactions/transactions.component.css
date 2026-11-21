@@ -16,3 +16,99 @@
   .transaction-page { padding: 1rem !important; }
   .search-input, .status-select { width: 100%; }
 }
+
+.transaction-page {
+  max-width: 1500px;
+  margin: 0 auto;
+  color: #212529;
+}
+
+.transaction-stat {
+  padding: 1.1rem 1.2rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.85rem;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(31, 41, 55, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.transaction-stat:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(31, 41, 55, 0.1);
+}
+
+.transaction-stat span {
+  color: #6b7280;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.transaction-stat strong {
+  margin-top: 0.4rem;
+  color: var(--app-primary, #0d6efd);
+  font-size: 1.75rem;
+}
+
+.transaction-page > .card,
+.rental-detail {
+  overflow: hidden;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 0.9rem;
+}
+
+.transaction-tabs {
+  gap: 0.5rem;
+}
+
+.transaction-tab {
+  border-color: #e5e7eb;
+  border-radius: 0.6rem;
+  padding: 0.6rem 1rem;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.transaction-tab:hover:not(.active) {
+  background: #f3f6fb;
+}
+
+.transaction-tab.active {
+  border-color: var(--app-primary, #0d6efd);
+  background: var(--app-primary, #0d6efd);
+}
+
+.transaction-page .table th {
+  color: #4b5563;
+  background: #f8fafc;
+  font-weight: 600;
+}
+
+.transaction-page .table td,
+.transaction-page .table th {
+  padding-top: 0.85rem;
+  padding-bottom: 0.85rem;
+}
+
+.transaction-page .table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.detail-panel {
+  border-color: #e5e7eb;
+  border-radius: 0.75rem;
+  background: #f8fafc;
+}
+
+.detail-label {
+  font-weight: 600;
+}
+
+@media (max-width: 576px) {
+  .transaction-page {
+    padding: 1rem !important;
+  }
+
+  .search-input,
+  .status-select {
+    width: 100%;
+  }
+}

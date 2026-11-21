@@ -19,14 +19,17 @@ namespace RentalPS_BE.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var roomTypes = await _roomTypeService.GetAllAsync();
+            var roomTypes =
+                await _roomTypeService.GetAllAsync();
+
             return Ok(roomTypes);
         }
 
-        [HttpGet("{id:int:min(1)}")]
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var roomType = await _roomTypeService.GetByIdAsync(id);
+            var roomType =
+                await _roomTypeService.GetByIdAsync(id);
 
             if (roomType == null)
             {
@@ -40,7 +43,8 @@ namespace RentalPS_BE.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create(RoomTypeRequest request)
         {
-            var created = await _roomTypeService.CreateAsync(request);
+            var created =
+                await _roomTypeService.CreateAsync(request);
 
             return CreatedAtAction(
                 nameof(GetById),
@@ -48,11 +52,14 @@ namespace RentalPS_BE.Controllers
                 created);
         }
 
-        [HttpPut("{id:int:min(1)}")]
+        [HttpPut("{id:int}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Update(int id, RoomTypeRequest request)
+        public async Task<IActionResult> Update(
+            int id,
+            RoomTypeRequest request)
         {
-            var updated = await _roomTypeService.UpdateAsync(id, request);
+            var updated =
+                await _roomTypeService.UpdateAsync(id, request);
 
             if (updated == null)
             {
@@ -62,13 +69,14 @@ namespace RentalPS_BE.Controllers
             return Ok(updated);
         }
 
-        [HttpDelete("{id:int:min(1)}")]
+        [HttpDelete("{id:int}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
-            var deactivated = await _roomTypeService.DeactivateAsync(id);
+            var deleted =
+                await _roomTypeService.DeleteAsync(id);
 
-            if (!deactivated)
+            if (!deleted)
             {
                 return NotFound();
             }

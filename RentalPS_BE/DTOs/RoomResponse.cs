@@ -9,7 +9,8 @@ namespace RentalPS_BE.DTOs
         public int RoomTypeId { get; set; }
         public string RoomNumber { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
+
         [JsonConverter(typeof(JsonStringEnumConverter))]
-        public StatusRoom StatusRoom { get; set; }  
+        public StatusRoom StatusRoom { get; set; }
     }
 }
