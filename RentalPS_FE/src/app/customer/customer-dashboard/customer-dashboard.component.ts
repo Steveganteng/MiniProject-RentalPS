@@ -1,9 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, OnDestroy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
 import { concatMap, finalize, from, of, switchMap, toArray } from 'rxjs';
-import { AuthService } from '../../services/auth/auth.service';
 import {
   ConsoleType,
   ConsoleUnit,
@@ -28,11 +26,6 @@ import {
 export class CustomerDashboardComponent implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly rentalService = inject(RentalService);
-  private readonly authService = inject(AuthService);
-  private readonly router = inject(Router);
-
-  userName = 'Customer';
-
   consoleTypes: ConsoleType[] = [];
   consoleUnits: ConsoleUnit[] = [];
   roomTypes: RoomType[] = [];
@@ -60,24 +53,54 @@ export class CustomerDashboardComponent implements OnInit, OnDestroy {
   reminderMessage = '';
 
   private reminderIntervalId: number | undefined;
+  private countdownIntervalId: number | undefined;
+  private currentTime = Date.now();
   private shownReminderKeys = new Set<string>();
 
   bookingForm = this.fb.nonNullable.group({
     consoleUnitId: [0, [Validators.required, Validators.min(1)]],
     // Sesuai alur booking tim: Customer wajib memilih satu tipe/ruangan.
     roomId: [0, [Validators.required, Validators.min(1)]],
-    stickIds: this.fb.nonNullable.control<number[]>([]),
+    stickQuantity: [0, [Validators.required, Validators.min(0), Validators.pattern(/^\d+$/)]],
     startTime: [this.getDefaultStartTime(), Validators.required],
     durationHour: [2, [Validators.required, Validators.min(1), Validators.max(24)]],
     paymentMethod: ['Qris', Validators.required]
   });
 
   ngOnInit(): void {
-    this.extractUserFromToken();
     this.loadAllData();
+    this.countdownIntervalId = window.setInterval(() => {
+      this.currentTime = Date.now();
+    }, 1000);
     this.reminderIntervalId = window.setInterval(() => {
-    this.checkBookingReminders();
+      this.checkBookingReminders();
     }, 30000);
+  }
+
+  get rentalCountdown(): { label: string; time: string } {
+    const rental = this.activeRental;
+    if (!rental?.startTime || !rental.endTime) {
+      return { label: 'Jadwal sewa belum tersedia', time: '' };
+    }
+
+    const start = new Date(rental.startTime).getTime();
+    const end = new Date(rental.endTime).getTime();
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
+      return { label: 'Jadwal sewa belum tersedia', time: '' };
+    }
+    if (this.currentTime < start) {
+      return { label: 'Hitung mundur dimulai sesuai jadwal sewa.', time: '' };
+    }
+    if (this.currentTime >= end) {
+      return { label: 'Waktu sewa sudah habis', time: '00:00:00' };
+    }
+
+    const remainingSeconds = Math.ceil((end - this.currentTime) / 1000);
+    const hours = Math.floor(remainingSeconds / 3600);
+    const minutes = Math.floor(remainingSeconds / 60) % 60;
+    const seconds = remainingSeconds % 60;
+    const time = [hours, minutes, seconds].map((part) => String(part).padStart(2, '0')).join(':');
+    return { label: 'Sisa waktu sewa', time };
   }
 
   get minStartTime(): string {
@@ -98,21 +121,6 @@ export class CustomerDashboardComponent implements OnInit, OnDestroy {
 
   private normalizeStatus(value: string | number | null | undefined): string {
     return String(value ?? '').replace(/[\s_-]/g, '').toLowerCase();
-  }
-
-  private extractUserFromToken(): void {
-    const token = this.authService.getToken();
-    if (!token) return;
-
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      this.userName =
-        payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] ||
-        payload['name'] ||
-        'Customer';
-    } catch {
-      this.userName = 'Customer';
-    }
   }
 
   loadAllData(preserveError = false): void {
@@ -160,9 +168,8 @@ export class CustomerDashboardComponent implements OnInit, OnDestroy {
 
           this.onConsoleUnitChanged();
         },
-        error: (error) => {
-          this.errorMessage =
-            error?.error?.message || 'Gagal memuat data dashboard. Periksa koneksi ke API.';
+        error: () => {
+          this.errorMessage = 'Kami belum bisa memuat halaman ini. Coba muat ulang halaman.';
         }
       });
   }
@@ -197,40 +204,11 @@ export class CustomerDashboardComponent implements OnInit, OnDestroy {
   }
 
   onConsoleUnitChanged(): void {
-    const currentIds = this.bookingForm.controls.stickIds.value;
-    const validIds = currentIds.filter((id) =>
-      this.availableSticks.some((stick) => stick.id === id)
-    );
-    this.bookingForm.controls.stickIds.setValue(validIds);
-  }
-
-  /** Returns whether a stick inventory item is currently selected in the booking form. */
-  isStickSelected(stickId: number): boolean {
-    return this.bookingForm.controls.stickIds.value.includes(stickId);
-  }
-
-  /** Adds or removes a stick ID when its checkbox changes. */
-  onStickSelectionChanged(stickId: number, checked: boolean): void {
-    const stickIdsControl = this.bookingForm.controls.stickIds;
-    const currentIds = stickIdsControl.value;
-
-    if (checked) {
-      // Only allow selection when the stick is currently available and matches
-      // the selected console generation.
-      const isAvailable = this.availableSticks.some((stick) => stick.id === stickId);
-      if (!isAvailable) {
-        this.errorMessage = 'Stik tidak tersedia atau tidak sesuai dengan generasi konsol.';
-        return;
-      }
-
-      if (!currentIds.includes(stickId)) {
-        stickIdsControl.setValue([...currentIds, stickId]);
-      }
-    } else {
-      stickIdsControl.setValue(currentIds.filter((id) => id !== stickId));
+    const quantity = this.bookingForm.controls.stickQuantity;
+    const available = this.availableSticks.length;
+    if (quantity.value > available) {
+      quantity.setValue(available);
     }
-
-    this.errorMessage = '';
   }
 
   getConsoleType(id: number): ConsoleType | undefined {
@@ -286,7 +264,7 @@ export class CustomerDashboardComponent implements OnInit, OnDestroy {
 
   getActiveUnitCode(unitId: number): string {
     const unit = this.consoleUnits.find((item) => item.id === unitId);
-    if (!unit) return `Unit #${unitId}`;
+    if (!unit) return 'Konsol belum diketahui';
     return `${this.getConsoleType(unit.consoleTypeId)?.name || ''} — ${unit.unitCode}`;
   }
 
@@ -317,8 +295,11 @@ export class CustomerDashboardComponent implements OnInit, OnDestroy {
   }
 
   get selectedSticks(): Stick[] {
-    const selectedIds = this.bookingForm.controls.stickIds.value;
-    return this.sticks.filter((stick) => selectedIds.includes(stick.id));
+    const quantity = this.bookingForm.controls.stickQuantity.value;
+    const available = this.availableSticks;
+    return Number.isInteger(quantity) && quantity > 0 && quantity <= available.length
+      ? available.slice(0, quantity)
+      : [];
   }
 
   get selectedConsoleRate(): number {
@@ -404,25 +385,25 @@ export class CustomerDashboardComponent implements OnInit, OnDestroy {
     const formValue = this.bookingForm.getRawValue();
     const start = new Date(formValue.startTime);
     if (Number.isNaN(start.getTime()) || start.getTime() <= Date.now()) {
-      this.errorMessage = 'Waktu mulai harus berada di masa depan.';
+      this.errorMessage = 'Pilih waktu mulai setelah waktu sekarang.';
       return;
     }
 
     const duration = Number(formValue.durationHour);
     if (!Number.isInteger(duration) || duration < 1 || duration > 24) {
-      this.errorMessage = 'Durasi rental harus berupa bilangan bulat antara 1 sampai 24 jam.';
+      this.errorMessage = 'Pilih lama bermain antara 1 dan 24 jam, tanpa pecahan.';
       return;
     }
 
     const unitId = Number(formValue.consoleUnitId);
     const roomId = Number(formValue.roomId);
-    const stickIds = [...formValue.stickIds];
+    const stickIds = this.selectedSticks.map((stick) => stick.id);
     if (!this.availableRooms.some((room) => room.id === roomId)) {
       this.errorMessage = 'Pilih ruangan yang masih tersedia.';
       return;
     }
-    if (stickIds.some((stickId) => !this.availableSticks.some((stick) => stick.id === stickId))) {
-      this.errorMessage = 'Satu atau lebih stik yang dipilih tidak tersedia atau tidak sesuai dengan generasi konsol.';
+    if (stickIds.length !== formValue.stickQuantity) {
+      this.errorMessage = 'Sesuaikan jumlah stik tambahan dengan stok yang tersedia.';
       return;
     }
 
@@ -469,21 +450,18 @@ export class CustomerDashboardComponent implements OnInit, OnDestroy {
       finalize(() => (this.isSubmitting = false))
     ).subscribe({
       next: () => {
-        this.successMessage = 'Booking dan pembuatan pembayaran berhasil. Pembayaran menunggu konfirmasi Admin.';
+        this.successMessage = 'Pesanan Anda berhasil dibuat. Pembayaran sedang menunggu konfirmasi.';
         this.bookingForm.patchValue({
-          stickIds: [],
+          stickQuantity: 0,
           startTime: this.getDefaultStartTime(),
           durationHour: 2
         });
         this.loadAllData();
       },
-      error: (error: unknown) => {
-        const apiError = error as { error?: { message?: string } };
-        const detail = apiError.error?.message ||
-          'Periksa ketersediaan unit, ruangan, stik, dan status transaksi.';
+      error: () => {
         this.errorMessage = createdRentalId !== null
-          ? `Rental #${createdRentalId} sudah dibuat, tetapi proses detail atau pembayaran belum selesai. Periksa riwayat Rental sebelum mencoba booking ulang. Detail: ${detail}`
-          : `Booking gagal dibuat. ${detail}`;
+          ? 'Pesanan Anda sudah tercatat. Periksa riwayat sewa untuk melihat rincian pesanan dan pembayaran sebelum memesan lagi.'
+          : 'Pesanan belum berhasil dibuat. Periksa pilihan Anda, lalu coba lagi.';
         // Muat ulang agar rental/detail yang mungkin sudah tersimpan sebelum
         // salah satu request berikutnya gagal tetap terlihat pada riwayat.
         this.loadAllData(true);
@@ -523,23 +501,23 @@ export class CustomerDashboardComponent implements OnInit, OnDestroy {
 
   getRoomNumber(roomId: number): string {
     const room = this.rooms.find((item) => item.id === roomId);
-    return room?.roomNumber ?? `Room #${roomId}`;
+    return room?.roomNumber ?? 'Nomor ruangan belum diketahui';
   }
 
   getStickInventoryLabel(stickId: number): string {
     const stick = this.sticks.find((item) => item.id === stickId);
-    return stick ? this.getStickLabel(stick) : `Stick #${stickId}`;
+    return stick ? this.getStickLabel(stick) : 'Stik tambahan';
   }
 
   getPaymentMethodLabel(method: string | number): string {
     if (typeof method === 'number') {
-      return ['Cash', 'QRIS', 'Transfer'][method] ?? 'Tidak diketahui';
+      return ['Tunai', 'QRIS', 'Transfer bank'][method] ?? 'Tidak diketahui';
     }
     const normalized = this.normalizeStatus(method);
-    if (normalized === 'cash') return 'Cash';
+    if (normalized === 'cash') return 'Tunai';
     if (normalized === 'qris') return 'QRIS';
-    if (normalized === 'transfer') return 'Transfer';
-    return method || 'Tidak diketahui';
+    if (normalized === 'transfer') return 'Transfer bank';
+    return 'Tidak diketahui';
   }
 
   getRentalStatusLabel(status: string | number): string {
@@ -560,6 +538,25 @@ export class CustomerDashboardComponent implements OnInit, OnDestroy {
     const normalized = this.normalizeStatus(status);
     const labels: Record<string, string> = { pending: 'Pending', success: 'Success', failed: 'Failed' };
     return labels[normalized] ?? String(status);
+  }
+
+  getRentalStatusText(status: string | number): string {
+    const labels: Record<string, string> = {
+      Pending: 'Menunggu konfirmasi',
+      Active: 'Sedang berlangsung',
+      Completed: 'Selesai',
+      Cancelled: 'Dibatalkan'
+    };
+    return labels[this.getRentalStatusLabel(status)] ?? 'Belum diketahui';
+  }
+
+  getPaymentStatusText(status: string | number): string {
+    const labels: Record<string, string> = {
+      Pending: 'Menunggu konfirmasi',
+      Success: 'Berhasil',
+      Failed: 'Gagal'
+    };
+    return labels[this.getPaymentStatusLabel(status)] ?? 'Belum diketahui';
   }
 
   openRentalDetail(rental: Rental): void {
@@ -592,7 +589,7 @@ export class CustomerDashboardComponent implements OnInit, OnDestroy {
     if (!this.canCancelRental(rental) || this.cancellingRentalId !== null) return;
 
     const confirmed = window.confirm(
-      `Batalkan rental ${rental.rentalCode}? Jika ada pembayaran Pending, pembayaran itu tidak dapat dikonfirmasi setelah rental dibatalkan.`
+      `Batalkan pesanan ${rental.rentalCode}? Pembayaran yang sedang menunggu konfirmasi juga tidak bisa diteruskan.`
     );
     if (!confirmed) return;
 
@@ -604,14 +601,12 @@ export class CustomerDashboardComponent implements OnInit, OnDestroy {
       .pipe(finalize(() => (this.cancellingRentalId = null)))
       .subscribe({
         next: () => {
-          this.successMessage = `Rental ${rental.rentalCode} berhasil dibatalkan.`;
+          this.successMessage = `Pesanan ${rental.rentalCode} sudah dibatalkan.`;
           this.selectedRental = null;
           this.loadAllData();
         },
-        error: (error: unknown) => {
-          const apiError = error as { error?: { message?: string } };
-          this.errorMessage = apiError.error?.message ||
-            'Rental tidak dapat dibatalkan karena fitur refund belum tersedia.';
+        error: () => {
+          this.errorMessage = 'Pesanan belum bisa dibatalkan. Hubungi petugas jika Anda perlu bantuan.';
         }
       });
   }
@@ -638,12 +633,12 @@ export class CustomerDashboardComponent implements OnInit, OnDestroy {
       {
         key: 'start',
         eventTime: new Date(rental.startTime).getTime(),
-        message: `Booking ${rental.rentalCode} dimulai 5 menit lagi.`
+        message: `Sesi bermain ${rental.rentalCode} dimulai 5 menit lagi.`
       },
       {
         key: 'end',
         eventTime: new Date(rental.endTime).getTime(),
-        message: `Booking ${rental.rentalCode} berakhir 5 menit lagi.`
+        message: `Sesi bermain ${rental.rentalCode} berakhir 5 menit lagi.`
       }
     ];
 
@@ -667,14 +662,8 @@ export class CustomerDashboardComponent implements OnInit, OnDestroy {
   }
 }
 
-  logout(): void {
-    this.authService.logout();
-    void this.router.navigate(['/login']);
-  }
-
   ngOnDestroy(): void {
-  if (this.reminderIntervalId !== undefined) {
     window.clearInterval(this.reminderIntervalId);
+    window.clearInterval(this.countdownIntervalId);
   }
-}
 }

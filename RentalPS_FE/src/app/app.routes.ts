@@ -4,6 +4,7 @@ import { LoginComponent } from './login/login.component';
 import { RegisterComponent } from './register/register.component';
 import { DashboardComponent } from './admin/dashboard/dashboard.component';
 import { CustomerDashboardComponent } from './customer/customer-dashboard/customer-dashboard.component';
+import { CustomerLayoutComponent } from './customer/customer-layout/customer-layout.component';
 import { InventoryManagementComponent } from './admin/inventory-management/inventory-management.component';
 import { TransactionsComponent } from './admin/transactions/transactions.component';
 import { authGuard } from './services/auth/auth.guard';
@@ -46,10 +47,21 @@ export const routes: Routes = [
   ]
 },
   {
-    path: 'customer/dashboard',
-    component: CustomerDashboardComponent,
+    path: 'customer',
+    component: CustomerLayoutComponent,
     canActivate: [authGuard],
-    data: { role: 'customer' }
+    data: { role: 'customer' },
+    children: [
+      {
+        path: 'dashboard',
+        component: CustomerDashboardComponent
+      },
+      {
+        path: '',
+        redirectTo: 'dashboard',
+        pathMatch: 'full'
+      }
+    ]
   },
   {
     path: '',
