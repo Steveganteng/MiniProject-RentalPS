@@ -1,30 +1,12 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm">
-  <div class="container">
-    <a class="navbar-brand fw-bold" href="#">RentalPS</a>
-    <div class="d-flex align-items-center gap-3">
-      <span class="text-light small">Halo, {{ userName }}</span>
-      <button type="button" class="btn btn-outline-light btn-sm" (click)="logout()">Logout</button>
-    </div>
-  </div>
-</nav>
+<main class="container customer-dashboard py-4 py-lg-5">
+  <h1 class="h3 fw-bold mb-4">Dashboard Pelanggan</h1>
 
-<main class="container py-4">
   <div *ngIf="errorMessage" class="alert alert-danger" role="alert">{{ errorMessage }}</div>
   <div *ngIf="successMessage" class="alert alert-success" role="status">{{ successMessage }}</div>
-  <div
-  *ngIf="reminderMessage"
-  class="alert alert-warning alert-dismissible fade show"
-  role="alert"
->
-  <strong>Pengingat booking:</strong> {{ reminderMessage }}
-
-  <button
-    type="button"
-    class="btn-close"
-    aria-label="Tutup"
-    (click)="reminderMessage = ''"
-  ></button>
-</div>
+  <div *ngIf="reminderMessage" class="alert alert-warning alert-dismissible" role="alert">
+    <strong>Pengingat jadwal:</strong> {{ reminderMessage }}
+    <button type="button" class="btn-close" aria-label="Tutup" (click)="reminderMessage = ''"></button>
+  </div>
   <div *ngIf="isLoading" class="text-center py-5">
     <div class="spinner-border text-primary" role="status">
       <span class="visually-hidden">Memuat data...</span>
@@ -33,19 +15,21 @@
 
   <ng-container *ngIf="!isLoading">
     <section class="mb-5" *ngIf="activeRental; else noActiveRental">
-      <h2 class="h5 fw-bold mb-3">Sewa & Pembayaran Aktif</h2>
-      <div class="card border-primary shadow-sm">
-        <div class="card-body">
+      <h2 class="h5 fw-bold mb-3">Sewa Anda Saat Ini</h2>
+      <div class="card shadow-sm">
+        <div class="card-body p-3 p-md-4">
           <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
             <div>
-              <span class="badge bg-primary me-2">{{ getRentalStatusLabel(activeRental.statusRental) }}</span>
-              <span class="badge" [ngClass]="getPaymentStatusClass(activePayment.paymentStatus)" *ngIf="activePayment">
-                Payment: {{ getPaymentStatusLabel(activePayment.paymentStatus) }} ({{ getPaymentMethodLabel(activePayment.paymentMethod) }})
-              </span>
-              <h3 class="h5 fw-bold mt-2 mb-0">{{ getActiveUnitCode(activeRental.consoleUnitId) }}</h3>
-              <p class="text-muted small mb-0">
-                Kode Sewa: <strong>{{ activeRental.rentalCode }}</strong>
-                <span *ngIf="activePayment"> • Kode Bayar: <strong>{{ activePayment.paymentCode }}</strong></span>
+              <h3 class="h5 fw-bold mb-1">{{ getActiveUnitCode(activeRental.consoleUnitId) }}</h3>
+              <p class="text-muted small mb-2">Kode sewa <strong>{{ activeRental.rentalCode }}</strong></p>
+              <div class="d-flex flex-wrap gap-2">
+                <span class="badge bg-primary">{{ getRentalStatusText(activeRental.statusRental) }}</span>
+                <span class="badge" [ngClass]="getPaymentStatusClass(activePayment.paymentStatus)" *ngIf="activePayment">
+                  Pembayaran: {{ getPaymentStatusText(activePayment.paymentStatus) }}
+                </span>
+              </div>
+              <p class="text-muted small mb-0 mt-2" *ngIf="activePayment">
+                {{ getPaymentMethodLabel(activePayment.paymentMethod) }} · Kode pembayaran {{ activePayment.paymentCode }}
               </p>
             </div>
             <div class="text-md-end">
@@ -53,7 +37,7 @@
               <span class="h5 fw-bold text-dark">Rp {{ activeRental.totalAmount | number:'1.0-0' }}</span>
             </div>
           </div>
-          <div class="row g-2 bg-light rounded p-3 small">
+          <div class="row g-3 mx-0 bg-light rounded p-3 small">
             <div class="col-12 col-md-4">
               <span class="text-muted d-block">Jadwal & Durasi</span>
               <strong>{{ activeRental.startTime | date:'dd MMM yyyy, HH:mm' }} – {{ activeRental.endTime | date:'HH:mm' }} ({{ activeRental.durationHour }} jam)</strong>
@@ -67,13 +51,18 @@
               <strong>{{ activeRentalSticks.length > 0 ? activeRentalSticks.length + ' stik tambahan' : 'Tanpa tambahan stik' }}</strong>
             </div>
           </div>
+          <div *ngIf="rentalCountdown as countdown"
+               class="rental-countdown d-flex flex-wrap align-items-center justify-content-between gap-2 rounded px-3 py-2 mt-3">
+            <span>{{ countdown.label }}</span>
+            <strong *ngIf="countdown.time" class="rental-countdown-time fs-4" role="timer">{{ countdown.time }}</strong>
+          </div>
           <div class="d-flex flex-wrap gap-2 mt-3">
             <button type="button" class="btn btn-outline-primary btn-sm" (click)="openRentalDetail(activeRental)">
-              Lihat Detail Rental
+              Lihat Rincian Sewa
             </button>
             <button *ngIf="canCancelRental(activeRental)" type="button" class="btn btn-outline-danger btn-sm"
                     [disabled]="cancellingRentalId === activeRental.id" (click)="cancelRental(activeRental)">
-              {{ cancellingRentalId === activeRental.id ? 'Membatalkan...' : 'Batalkan Rental' }}
+              {{ cancellingRentalId === activeRental.id ? 'Membatalkan...' : 'Batalkan Sewa' }}
             </button>
           </div>
         </div>
@@ -81,22 +70,140 @@
     </section>
 
     <ng-template #noActiveRental>
-      <div class="alert alert-info mb-5" role="status">
-        Belum ada sewa aktif atau menunggu konfirmasi.
+      <div class="border rounded bg-light px-3 py-2 mb-4 text-body-secondary" role="status">
+        Belum ada sewa aktif.
       </div>
     </ng-template>
 
+    <section id="form-booking" class="mb-5">
+      <h2 class="h5 fw-bold mb-3">Pesan PlayStation</h2>
+      <div class="card shadow-sm">
+        <div class="card-body p-3 p-md-4">
+          <form [formGroup]="bookingForm" (ngSubmit)="onSubmitBooking()">
+            <div *ngIf="availableUnits.length === 0" class="alert alert-warning">
+              Saat ini belum ada konsol yang tersedia.
+            </div>
+            <div *ngIf="availableRooms.length === 0" class="alert alert-warning">
+              Saat ini belum ada ruangan yang tersedia untuk dipesan.
+            </div>
+
+            <div class="row g-3">
+              <div class="col-12 col-md-4">
+                <label class="form-label fw-medium" for="consoleUnitId">Pilih Konsol</label>
+                <select id="consoleUnitId" class="form-select"
+                        formControlName="consoleUnitId" (change)="onConsoleUnitChanged()">
+                  <option [ngValue]="0" disabled>Pilih konsol</option>
+                  <option *ngFor="let unit of availableUnits" [ngValue]="unit.id">{{ getUnitLabel(unit) }}</option>
+                </select>
+              </div>
+
+              <div class="col-12 col-md-4">
+                <label class="form-label fw-medium" for="roomId">Pilih Ruangan</label>
+                <select id="roomId" class="form-select" formControlName="roomId">
+                  <option [ngValue]="0" disabled>Pilih ruangan</option>
+                  <option *ngFor="let room of availableRooms" [ngValue]="room.id">{{ getRoomLabel(room) }}</option>
+                </select>
+              </div>
+
+              <div class="col-12 col-md-4">
+                <label class="form-label fw-medium" for="stickQuantity">Stik tambahan <span class="text-body-secondary fw-normal">(opsional)</span></label>
+                <input id="stickQuantity" type="number" class="form-control"
+                       min="0" [max]="availableSticks.length" step="1" formControlName="stickQuantity"
+                       aria-describedby="stickQuantityHelp stickQuantityError"
+                       [class.is-invalid]="bookingForm.controls.stickQuantity.invalid"
+                       [attr.aria-invalid]="bookingForm.controls.stickQuantity.invalid" />
+                <small id="stickQuantityHelp" class="form-text">
+                  {{ availableSticks.length > 0
+                    ? 'Tersedia ' + availableSticks.length + ' stik. Isi 0 jika tidak perlu.'
+                    : 'Stik tambahan sedang tidak tersedia untuk konsol pilihan Anda.' }}
+                </small>
+                <div id="stickQuantityError" class="invalid-feedback">
+                  Masukkan jumlah stik dari 0 sampai {{ availableSticks.length }}, tanpa pecahan.
+                </div>
+              </div>
+
+              <div class="col-12 col-md-4">
+                <label class="form-label fw-medium" for="startTime">Waktu Mulai</label>
+                <input id="startTime" type="datetime-local" class="form-control"
+                       formControlName="startTime" [min]="minStartTime" />
+              </div>
+
+              <div class="col-12 col-md-4">
+                <label class="form-label fw-medium" for="durationHour">Lama Bermain (jam)</label>
+                <input id="durationHour" type="number" class="form-control"
+                       min="1" max="24" step="1" formControlName="durationHour" />
+              </div>
+
+              <div class="col-12 col-md-4">
+                <label class="form-label fw-medium" for="paymentMethod">Metode Pembayaran</label>
+                <select id="paymentMethod" class="form-select" formControlName="paymentMethod">
+                  <option value="Qris">QRIS</option>
+                  <option value="Transfer">Transfer Bank</option>
+                  <option value="Cash">Tunai di kasir</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="bg-light border rounded p-3 mt-4 mb-3">
+              <h3 class="h6 fw-bold mb-2">Ringkasan Biaya</h3>
+              <div class="small text-muted mb-2" *ngIf="durationDiscountPercent > 0">
+                Diskon {{ durationDiscountPercent }}% untuk konsol
+                <span *ngIf="selectedRoomIsVip">dan ruangan VIP</span>.
+              </div>
+
+              <div class="cost-row small py-1">
+                <span>Konsol <small class="text-body-secondary d-block">Rp {{ selectedConsoleRate | number:'1.0-0' }}/jam × {{ duration }} jam</small></span>
+                <span class="text-end">
+                  <small class="text-muted text-decoration-line-through d-block" *ngIf="consoleDiscountAmount > 0">
+                    Rp {{ consoleBaseTotal | number:'1.0-0' }}
+                  </small>
+                  Rp {{ consoleSubtotal | number:'1.0-0' }}
+                </span>
+              </div>
+              <div class="cost-row small py-1">
+                <span>
+                  Ruangan
+                  <small class="text-body-secondary d-block">Rp {{ selectedRoomRate | number:'1.0-0' }}/jam × {{ duration }} jam</small>
+                </span>
+                <span class="text-end">
+                  <small class="text-muted text-decoration-line-through d-block" *ngIf="roomDiscountAmount > 0">
+                    Rp {{ roomBaseTotal | number:'1.0-0' }}
+                  </small>
+                  Rp {{ roomSubtotal | number:'1.0-0' }}
+                </span>
+              </div>
+              <div class="cost-row small py-1 mb-2" *ngIf="selectedSticks.length > 0">
+                <span>Stik tambahan ({{ selectedSticks.length }}) <small class="text-body-secondary d-block">Rp {{ selectedStickRate | number:'1.0-0' }}/jam × {{ duration }} jam</small></span>
+                <span>Rp {{ stickSubtotal | number:'1.0-0' }}</span>
+              </div>
+              <div class="cost-row fw-bold border-top pt-2">
+                <span>Perkiraan total biaya</span>
+                <span class="text-primary">Rp {{ totalAmount | number:'1.0-0' }}</span>
+              </div>
+            </div>
+
+            <div class="d-grid d-sm-flex justify-content-sm-end">
+              <button type="submit" class="btn btn-primary px-4"
+                      [disabled]="bookingForm.invalid || isSubmitting || availableUnits.length === 0 || availableRooms.length === 0">
+                {{ isSubmitting ? 'Memproses...' : 'Buat Pesanan' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
     <section class="mb-5">
       <h2 class="h5 fw-bold mb-3">Riwayat Sewa</h2>
-      <div class="table-responsive" *ngIf="rentalHistory.length > 0; else noRentalHistory">
-        <table class="table table-striped align-middle">
-          <thead>
+      <div class="table-responsive border rounded" *ngIf="rentalHistory.length > 0; else noRentalHistory">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
             <tr>
               <th>Kode Sewa</th>
-              <th>Unit</th>
-              <th>Waktu</th>
+              <th>Konsol</th>
+              <th>Jadwal</th>
               <th>Durasi</th>
-              <th>Total</th>
+              <th class="text-end">Total</th>
               <th>Status Sewa</th>
               <th>Status Pembayaran</th>
               <th>Aksi</th>
@@ -106,16 +213,16 @@
             <tr *ngFor="let rental of rentalHistory">
               <td>{{ rental.rentalCode }}</td>
               <td>{{ getActiveUnitCode(rental.consoleUnitId) }}</td>
-              <td>{{ rental.startTime | date:'dd MMM yyyy, HH:mm' }}</td>
-              <td>{{ rental.durationHour }} jam</td>
-              <td>Rp {{ rental.totalAmount | number:'1.0-0' }}</td>
-              <td>{{ getRentalStatusLabel(rental.statusRental) }}</td>
-              <td>{{ getPaymentForRental(rental.id) ? getPaymentStatusLabel(getPaymentForRental(rental.id)!.paymentStatus) : 'Belum ada' }}</td>
+              <td class="text-nowrap">{{ rental.startTime | date:'dd MMM yyyy, HH:mm' }}</td>
+              <td class="text-nowrap">{{ rental.durationHour }} jam</td>
+              <td class="text-end text-nowrap">Rp {{ rental.totalAmount | number:'1.0-0' }}</td>
+              <td>{{ getRentalStatusText(rental.statusRental) }}</td>
+              <td>{{ getPaymentForRental(rental.id) ? getPaymentStatusText(getPaymentForRental(rental.id)!.paymentStatus) : 'Belum ada' }}</td>
               <td class="text-nowrap">
                 <button type="button" class="btn btn-outline-primary btn-sm me-1" (click)="openRentalDetail(rental)">Detail</button>
                 <button *ngIf="canCancelRental(rental)" type="button" class="btn btn-outline-danger btn-sm"
                         [disabled]="cancellingRentalId === rental.id" (click)="cancelRental(rental)">
-                  {{ cancellingRentalId === rental.id ? '...' : 'Cancel' }}
+                  {{ cancellingRentalId === rental.id ? 'Membatalkan...' : 'Batalkan' }}
                 </button>
               </td>
             </tr>
@@ -128,21 +235,15 @@
     </section>
 
     <section class="mb-5">
-      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-        <div>
-          <h2 class="h5 fw-bold mb-1">Riwayat Pembayaran</h2>
-          <p class="text-muted small mb-0">Seluruh pembayaran yang terhubung dengan rental akun Anda.</p>
-        </div>
-        <span class="badge bg-secondary">{{ payments.length }} pembayaran</span>
-      </div>
-      <div class="table-responsive" *ngIf="payments.length > 0; else noPaymentHistory">
-        <table class="table table-striped align-middle">
-          <thead>
+      <h2 class="h5 fw-bold mb-3">Riwayat Pembayaran</h2>
+      <div class="table-responsive border rounded" *ngIf="payments.length > 0; else noPaymentHistory">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
             <tr>
               <th>Kode Pembayaran</th>
-              <th>Kode Rental</th>
+              <th>Kode Sewa</th>
               <th>Metode</th>
-              <th>Nominal</th>
+              <th class="text-end">Jumlah</th>
               <th>Status</th>
               <th>Waktu Bayar</th>
               <th>Aksi</th>
@@ -151,15 +252,15 @@
           <tbody>
             <tr *ngFor="let payment of payments">
               <td class="fw-semibold">{{ payment.paymentCode }}</td>
-              <td>{{ getRentalById(payment.rentalId)?.rentalCode || ('Rental #' + payment.rentalId) }}</td>
+              <td>{{ getRentalById(payment.rentalId)?.rentalCode || 'Kode belum tersedia' }}</td>
               <td>{{ getPaymentMethodLabel(payment.paymentMethod) }}</td>
-              <td>Rp {{ payment.amount | number:'1.0-0' }}</td>
+              <td class="text-end text-nowrap">Rp {{ payment.amount | number:'1.0-0' }}</td>
               <td>
                 <span class="badge" [ngClass]="getPaymentStatusClass(getPaymentStatusLabel(payment.paymentStatus))">
-                  {{ getPaymentStatusLabel(payment.paymentStatus) }}
+                  {{ getPaymentStatusText(payment.paymentStatus) }}
                 </span>
               </td>
-              <td>{{ payment.paidAt ? (payment.paidAt | date:'dd MMM yyyy, HH:mm') : '-' }}</td>
+              <td class="text-nowrap">{{ payment.paidAt ? (payment.paidAt | date:'dd MMM yyyy, HH:mm') : '—' }}</td>
               <td><button type="button" class="btn btn-outline-primary btn-sm" (click)="openPaymentDetail(payment)">Detail</button></td>
             </tr>
           </tbody>
@@ -170,141 +271,14 @@
       </ng-template>
     </section>
 
-    <section id="form-booking" class="mb-5">
-      <h2 class="h5 fw-bold mb-3">Form Booking Unit</h2>
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <form [formGroup]="bookingForm" (ngSubmit)="onSubmitBooking()">
-            <div *ngIf="availableUnits.length === 0" class="alert alert-warning">
-              Belum ada unit konsol berstatus Available.
-            </div>
-            <div *ngIf="availableRooms.length === 0" class="alert alert-warning">
-              Belum ada ruangan berstatus Available. Booking belum dapat dilanjutkan.
-            </div>
-
-            <div class="row g-3">
-              <div class="col-12 col-md-4">
-                <label class="form-label fw-medium" for="consoleUnitId">Pilih Unit Konsol</label>
-                <select id="consoleUnitId" class="form-select"
-                        formControlName="consoleUnitId" (change)="onConsoleUnitChanged()">
-                  <option [ngValue]="0" disabled>-- Pilih Unit Tersedia --</option>
-                  <option *ngFor="let unit of availableUnits" [ngValue]="unit.id">{{ getUnitLabel(unit) }}</option>
-                </select>
-              </div>
-
-              <div class="col-12 col-md-4">
-                <label class="form-label fw-medium" for="roomId">Pilih Ruangan</label>
-                <select id="roomId" class="form-select" formControlName="roomId">
-                  <option [ngValue]="0" disabled>-- Pilih VIP / Regular --</option>
-                  <option *ngFor="let room of availableRooms" [ngValue]="room.id">{{ getRoomLabel(room) }}</option>
-                </select>
-                <small class="text-muted">Pilihan ruangan wajib sesuai alur booking.</small>
-              </div>
-
-              <div class="col-12 col-md-6">
-                <label class="form-label fw-medium">Tambahan Stik (Opsional — dapat memilih lebih dari satu)</label>
-                <div class="border rounded p-3 bg-light" style="max-height: 190px; overflow-y: auto;">
-                  <div *ngIf="availableSticks.length === 0" class="small text-muted">
-                    Tidak ada stik tersedia yang sesuai dengan generasi konsol terpilih.
-                  </div>
-                  <div class="form-check mb-2" *ngFor="let stick of availableSticks">
-                    <input class="form-check-input" type="checkbox"
-                           [id]="'stick-' + stick.id"
-                           [checked]="isStickSelected(stick.id)"
-                           (change)="onStickSelectionChanged(stick.id, $any($event.target).checked)" />
-                    <label class="form-check-label" [for]="'stick-' + stick.id">
-                      {{ getStickLabel(stick) }}
-                    </label>
-                  </div>
-                </div>
-                <small class="text-muted">{{ selectedSticks.length }} stik dipilih. Tarif setiap stik dihitung sesuai durasi rental.</small>
-              </div>
-
-              <div class="col-12 col-md-4">
-                <label class="form-label fw-medium" for="startTime">Waktu Mulai</label>
-                <input id="startTime" type="datetime-local" class="form-control"
-                       formControlName="startTime" [min]="minStartTime" />
-              </div>
-
-              <div class="col-12 col-md-4">
-                <label class="form-label fw-medium" for="durationHour">Durasi Main (Jam)</label>
-                <input id="durationHour" type="number" class="form-control"
-                       min="1" max="24" step="1" formControlName="durationHour" />
-              </div>
-
-              <div class="col-12 col-md-4">
-                <label class="form-label fw-medium" for="paymentMethod">Metode Pembayaran</label>
-                <select id="paymentMethod" class="form-select" formControlName="paymentMethod">
-                  <option value="Qris">QRIS</option>
-                  <option value="Transfer">Transfer Bank</option>
-                  <option value="Cash">Cash di Kasir</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="alert alert-light border mt-4 mb-3">
-              <div class="small text-muted mb-2">
-                Diskon durasi: {{ durationDiscountPercent }}% untuk Console
-                <span *ngIf="selectedRoomIsVip">dan Room VIP</span>.
-                Stik tidak mendapatkan diskon.
-              </div>
-
-              <div class="d-flex justify-content-between small mb-1">
-                <span>Console (Rp {{ selectedConsoleRate | number:'1.0-0' }} × {{ duration }} jam)</span>
-                <span>
-                  <span class="text-muted text-decoration-line-through me-2" *ngIf="consoleDiscountAmount > 0">
-                    Rp {{ consoleBaseTotal | number:'1.0-0' }}
-                  </span>
-                  Rp {{ consoleSubtotal | number:'1.0-0' }}
-                </span>
-              </div>
-              <div class="d-flex justify-content-between small mb-1">
-                <span>
-                  Ruangan (Rp {{ selectedRoomRate | number:'1.0-0' }} × {{ duration }} jam)
-                  <span *ngIf="roomDiscountPercent > 0">(-{{ roomDiscountPercent }}%)</span>
-                </span>
-                <span>
-                  <span class="text-muted text-decoration-line-through me-2" *ngIf="roomDiscountAmount > 0">
-                    Rp {{ roomBaseTotal | number:'1.0-0' }}
-                  </span>
-                  Rp {{ roomSubtotal | number:'1.0-0' }}
-                </span>
-              </div>
-              <div class="d-flex justify-content-between small mb-2">
-                <span>Tambahan Stik ({{ selectedSticks.length }} unit; total tarif Rp {{ selectedStickRate | number:'1.0-0' }}/jam × {{ duration }} jam)</span>
-                <span>Rp {{ stickSubtotal | number:'1.0-0' }}</span>
-              </div>
-              <div class="d-flex justify-content-between fw-bold border-top pt-2">
-                <span>Estimasi Total Amount</span>
-                <span class="text-primary">Rp {{ totalAmount | number:'1.0-0' }}</span>
-              </div>
-              <small class="text-muted d-block mt-2">
-                Total akhir dihitung dan divalidasi kembali oleh Backend saat booking dan pembayaran.
-              </small>
-            </div>
-
-            <div class="text-end">
-              <button type="submit" class="btn btn-primary px-4"
-                      [disabled]="bookingForm.invalid || isSubmitting || availableUnits.length === 0 || availableRooms.length === 0">
-                {{ isSubmitting ? 'Memproses...' : 'Buat Booking & Bayar' }}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </section>
-
     <section class="mb-4">
       <div class="mb-3">
-        <h2 class="h5 fw-bold mb-1">Informasi & Detail Fasilitas</h2>
-        <p class="text-muted small mb-0">
-          Tarif dasar konsol, stik tambahan yang sesuai generasi konsol, dan pilihan tipe ruangan.
-        </p>
+        <h2 class="h5 fw-bold mb-1">Pilihan Konsol dan Ruangan</h2>
       </div>
 
       <div class="card shadow-sm mb-4">
         <div class="card-header bg-white py-3">
-          <h3 class="h6 fw-bold mb-0">1. Detail Jenis PlayStation & Stik Tambahan</h3>
+          <h3 class="h6 fw-bold mb-0">PlayStation dan Stik Tambahan</h3>
         </div>
         <div class="card-body">
           <div class="row g-3" *ngIf="consoleTypes.length > 0; else noConsoleTypes">
@@ -321,21 +295,21 @@
                     (+Rp {{ stickType.additionalHourlyRate | number:'1.0-0' }}/jam)
                   </li>
                   <li *ngIf="!getStickTypeByConsoleType(type.id)" class="text-muted">
-                    Tipe/tarif stik belum tersedia.
+                    Tarif stik tambahan belum tersedia.
                   </li>
                 </ul>
               </div>
             </div>
           </div>
           <ng-template #noConsoleTypes>
-            <p class="text-muted mb-0">Data tipe konsol belum tersedia dari server.</p>
+            <p class="text-muted mb-0">Pilihan konsol belum tersedia.</p>
           </ng-template>
         </div>
       </div>
 
       <div class="card shadow-sm">
         <div class="card-header bg-white py-3">
-          <h3 class="h6 fw-bold mb-0">2. Detail Tipe Ruangan</h3>
+          <h3 class="h6 fw-bold mb-0">Pilihan Ruangan</h3>
         </div>
         <div class="card-body">
           <div class="row g-3" *ngIf="roomTypes.length > 0; else noRoomTypes">
@@ -356,7 +330,7 @@
             </div>
           </div>
           <ng-template #noRoomTypes>
-            <p class="text-muted mb-0">Data tipe ruangan belum tersedia dari server.</p>
+            <p class="text-muted mb-0">Pilihan ruangan belum tersedia.</p>
           </ng-template>
         </div>
       </div>
@@ -369,46 +343,46 @@
              aria-labelledby="rental-detail-title" (click)="$event.stopPropagation()">
       <div class="card-header bg-white d-flex justify-content-between align-items-center">
         <div>
-          <h2 id="rental-detail-title" class="h5 fw-bold mb-0">Detail Rental</h2>
+          <h2 id="rental-detail-title" class="h5 fw-bold mb-0">Rincian Sewa</h2>
           <small class="text-muted">{{ rental.rentalCode }}</small>
         </div>
         <button type="button" class="btn-close" aria-label="Tutup" (click)="closeRentalDetail()"></button>
       </div>
       <div class="card-body">
         <div class="row g-3 mb-3">
-          <div class="col-6 col-md-4"><small class="text-muted d-block">Status Rental</small><strong>{{ getRentalStatusLabel(rental.statusRental) }}</strong></div>
+          <div class="col-6 col-md-4"><small class="text-muted d-block">Status Sewa</small><strong>{{ getRentalStatusText(rental.statusRental) }}</strong></div>
           <div class="col-6 col-md-4"><small class="text-muted d-block">Unit Konsol</small><strong>{{ getActiveUnitCode(rental.consoleUnitId) }}</strong></div>
           <div class="col-6 col-md-4"><small class="text-muted d-block">Durasi</small><strong>{{ rental.durationHour }} jam</strong></div>
           <div class="col-6 col-md-6"><small class="text-muted d-block">Mulai</small><strong>{{ rental.startTime | date:'dd MMM yyyy, HH:mm' }}</strong></div>
           <div class="col-6 col-md-6"><small class="text-muted d-block">Selesai</small><strong>{{ rental.endTime | date:'dd MMM yyyy, HH:mm' }}</strong></div>
         </div>
 
-        <h3 class="h6 fw-bold">Rincian Komponen</h3>
+        <h3 class="h6 fw-bold">Rincian Biaya</h3>
         <div class="table-responsive mb-3">
           <table class="table table-sm align-middle">
-            <thead><tr><th>Komponen</th><th>Tarif/Jam</th><th>Subtotal</th></tr></thead>
+            <thead><tr><th>Item</th><th>Tarif/Jam</th><th>Biaya</th></tr></thead>
             <tbody>
               <tr>
-                <td>Console — {{ getActiveUnitCode(rental.consoleUnitId) }}</td>
+                <td>Konsol — {{ getActiveUnitCode(rental.consoleUnitId) }}</td>
                 <td>Rp {{ rental.consoleRate | number:'1.0-0' }}</td>
                 <td>Rp {{ getRentalConsoleSubtotal(rental) | number:'1.0-0' }}</td>
               </tr>
               <tr *ngIf="getRentalRoom(rental.id) as roomDetail">
-                <td>Room — {{ roomDetail.name }} ({{ getRoomNumber(roomDetail.roomId) }})</td>
+                <td>Ruangan — {{ roomDetail.name }} ({{ getRoomNumber(roomDetail.roomId) }})</td>
                 <td>Rp {{ roomDetail.additionalHourlyRate | number:'1.0-0' }}</td>
                 <td>Rp {{ roomDetail.subTotal | number:'1.0-0' }}</td>
               </tr>
               <tr *ngFor="let stickDetail of getRentalSticks(rental.id)">
-                <td>Stick — {{ getStickInventoryLabel(stickDetail.stickId) }}</td>
+                <td>Stik — {{ getStickInventoryLabel(stickDetail.stickId) }}</td>
                 <td>Rp {{ stickDetail.hourlyRate | number:'1.0-0' }}</td>
                 <td>Rp {{ stickDetail.subTotal | number:'1.0-0' }}</td>
               </tr>
             </tbody>
-            <tfoot><tr class="fw-bold"><td colspan="2">Total Rental</td><td>Rp {{ rental.totalAmount | number:'1.0-0' }}</td></tr></tfoot>
+            <tfoot><tr class="fw-bold"><td colspan="2">Total Sewa</td><td>Rp {{ rental.totalAmount | number:'1.0-0' }}</td></tr></tfoot>
           </table>
         </div>
 
-        <h3 class="h6 fw-bold">Pembayaran Terkait</h3>
+        <h3 class="h6 fw-bold">Pembayaran</h3>
         <div *ngIf="getRentalPayments(rental.id).length > 0; else noLinkedPayments" class="table-responsive">
           <table class="table table-sm align-middle">
             <thead><tr><th>Kode</th><th>Metode</th><th>Nominal</th><th>Status</th><th></th></tr></thead>
@@ -417,18 +391,18 @@
                 <td>{{ payment.paymentCode }}</td>
                 <td>{{ getPaymentMethodLabel(payment.paymentMethod) }}</td>
                 <td>Rp {{ payment.amount | number:'1.0-0' }}</td>
-                <td>{{ getPaymentStatusLabel(payment.paymentStatus) }}</td>
+                <td>{{ getPaymentStatusText(payment.paymentStatus) }}</td>
                 <td><button type="button" class="btn btn-link btn-sm p-0" (click)="openPaymentDetail(payment)">Detail</button></td>
               </tr>
             </tbody>
           </table>
         </div>
-        <ng-template #noLinkedPayments><p class="text-muted small">Belum ada pembayaran untuk rental ini.</p></ng-template>
+        <ng-template #noLinkedPayments><p class="text-muted small">Belum ada pembayaran untuk sewa ini.</p></ng-template>
       </div>
       <div class="card-footer bg-white d-flex flex-wrap justify-content-between gap-2">
         <button *ngIf="canCancelRental(rental)" type="button" class="btn btn-outline-danger"
                 [disabled]="cancellingRentalId === rental.id" (click)="cancelRental(rental)">
-          {{ cancellingRentalId === rental.id ? 'Membatalkan...' : 'Batalkan Rental' }}
+          {{ cancellingRentalId === rental.id ? 'Membatalkan...' : 'Batalkan Sewa' }}
         </button>
         <button type="button" class="btn btn-secondary ms-auto" (click)="closeRentalDetail()">Tutup</button>
       </div>
@@ -448,23 +422,23 @@
       </div>
       <div class="card-body">
         <div class="row g-3">
-          <div class="col-6"><small class="text-muted d-block">Kode Rental</small><strong>{{ getRentalById(payment.rentalId)?.rentalCode || ('Rental #' + payment.rentalId) }}</strong></div>
+          <div class="col-6"><small class="text-muted d-block">Kode Sewa</small><strong>{{ getRentalById(payment.rentalId)?.rentalCode || 'Kode belum tersedia' }}</strong></div>
           <div class="col-6"><small class="text-muted d-block">Nominal</small><strong>Rp {{ payment.amount | number:'1.0-0' }}</strong></div>
           <div class="col-6"><small class="text-muted d-block">Metode Pembayaran</small><strong>{{ getPaymentMethodLabel(payment.paymentMethod) }}</strong></div>
-          <div class="col-6"><small class="text-muted d-block">Status Pembayaran</small><span class="badge" [ngClass]="getPaymentStatusClass(getPaymentStatusLabel(payment.paymentStatus))">{{ getPaymentStatusLabel(payment.paymentStatus) }}</span></div>
-          <div class="col-12"><small class="text-muted d-block">Waktu Konfirmasi</small><strong>{{ payment.paidAt ? (payment.paidAt | date:'dd MMM yyyy, HH:mm:ss') : 'Belum dikonfirmasi Admin' }}</strong></div>
+          <div class="col-6"><small class="text-muted d-block">Status Pembayaran</small><span class="badge" [ngClass]="getPaymentStatusClass(getPaymentStatusLabel(payment.paymentStatus))">{{ getPaymentStatusText(payment.paymentStatus) }}</span></div>
+          <div class="col-12"><small class="text-muted d-block">Waktu Konfirmasi</small><strong>{{ payment.paidAt ? (payment.paidAt | date:'dd MMM yyyy, HH:mm:ss') : 'Belum dikonfirmasi' }}</strong></div>
         </div>
         <div class="alert alert-warning mt-3 mb-0" *ngIf="getPaymentStatusLabel(payment.paymentStatus) === 'Pending' && isPaymentForCancelledRental(payment)">
-          Rental ini sudah dibatalkan. Pembayaran Pending tidak dapat dikonfirmasi untuk rental yang dibatalkan. Silakan hubungi Admin untuk tindak lanjut.
+          Pesanan ini sudah dibatalkan. Hubungi petugas jika Anda sudah membayar.
         </div>
         <div class="alert alert-info mt-3 mb-0" *ngIf="getPaymentStatusLabel(payment.paymentStatus) === 'Pending' && !isPaymentForCancelledRental(payment)">
-          Pembayaran Anda sedang menunggu konfirmasi Admin.
+          Pembayaran Anda sedang menunggu konfirmasi.
         </div>
         <div class="alert alert-success mt-3 mb-0" *ngIf="getPaymentStatusLabel(payment.paymentStatus) === 'Success'">
-          Pembayaran telah dikonfirmasi berhasil.
+          Pembayaran Anda sudah dikonfirmasi.
         </div>
         <div class="alert alert-danger mt-3 mb-0" *ngIf="getPaymentStatusLabel(payment.paymentStatus) === 'Failed'">
-          Pembayaran ditolak atau gagal. Silakan hubungi Admin untuk tindak lanjut.
+          Pembayaran belum berhasil. Hubungi petugas jika Anda perlu bantuan.
         </div>
       </div>
       <div class="card-footer bg-white text-end">
